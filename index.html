@@ -295,10 +295,7 @@
                repeating-linear-gradient(104deg, transparent 0 19px, rgba(255,255,255,.3) 19px 20px)}
   .paper span{display:inline-block;color:#4a4338;opacity:.72;filter:blur(.75px);font:800 13px/1 var(--kr);margin:-1px -2px}
   .wad{position:relative;width:108px;height:104px;margin:0 auto}
-  .wad::after{content:"";position:absolute;left:14%;right:14%;bottom:-6px;height:12px;border-radius:50%;
-    background:radial-gradient(ellipse at center, rgba(0,0,0,.55), rgba(0,0,0,0) 70%);z-index:-1}
-  .wad span{position:absolute;left:50%;top:50%;white-space:pre;font-weight:800;line-height:1;font-family:var(--kr);
-    text-shadow:0 1px 1px rgba(0,0,0,.55)}
+  .wad span{position:absolute;left:50%;top:50%;white-space:pre;font-weight:700;line-height:1;font-family:var(--kr)}
   #trashList .cap{display:block;margin-top:9px;color:#7b8580;font:11px var(--code)}
   #trashList li{padding:9px 10px;margin-bottom:8px;border:1px dashed rgba(255,255,255,.14);border-radius:10px;color:#8b8f94;font:13px/1.6 var(--code);
     filter:grayscale(1);word-break:break-all}
@@ -2742,23 +2739,24 @@ function renderTrashView(){
     const wad = document.createElement("div"); wad.className = "wad";
     wad.style.setProperty("--rot", (r() * 360).toFixed(0) + "deg");
     const src = [...(m.text || "📷 photo")].filter(ch => ch.trim());
-    const N = 95, R = 46, bits = [];
+    // 글자만으로 된 울퉁불퉁한 뭉치 (배경 없음, 회색 톤, 덜 촘촘하게)
+    const N = 46, R = 40, bits = [];
+    const lobes = [r() * TAU, r() * TAU, r() * TAU];
     for (let i = 0; i < N; i++){
-      const rr = Math.sqrt(r()) * R, th = r() * TAU;
-      const x = Math.cos(th) * rr, y = Math.sin(th) * rr * 0.96;
-      const z = Math.sqrt(Math.max(0, 1 - (rr / R) ** 2));            // 공의 앞쪽일수록 1
-      const lit = Math.max(0, (-0.55 * x - 0.65 * y) / R);              // 왼쪽 위에서 빛
-      bits.push({ x, y, z, lit, ch: src[i % src.length] });
+      const th = r() * TAU;
+      const edge = R * (0.78 + 0.12 * Math.sin(th * 3 + lobes[0]) + 0.08 * Math.sin(th * 5 + lobes[1]) + 0.06 * Math.cos(th * 2 + lobes[2]));
+      const rr = Math.sqrt(r()) * edge;
+      bits.push({ x: Math.cos(th) * rr, y: Math.sin(th) * rr * 0.92, z: 1 - rr / Math.max(1, edge), ch: src[i % src.length] });
     }
-    bits.sort((a, b) => a.z - b.z);                                     // 뒤쪽 글자부터 깔아서 앞 글자가 위로
+    bits.sort((a, b) => a.z - b.z);
     for (const q of bits){
       const sp = document.createElement("span");
       sp.textContent = q.ch;
-      const L = Math.round(70 + (q.z * 0.6 + q.lit * 0.5) * 160);       // 70~255 회색 명암
-      sp.style.color = `rgb(${Math.min(255, L + 8)},${Math.min(255, L + 4)},${L})`;
-      sp.style.fontSize = (8 + q.z * 11).toFixed(1) + "px";
-      sp.style.transform = `translate(-50%,-50%) translate(${q.x.toFixed(1)}px, ${q.y.toFixed(1)}px) rotate(${(r() * 360).toFixed(0)}deg) scale(${(0.8 + r() * 0.5).toFixed(2)}, ${(0.55 + r() * 0.6).toFixed(2)})`;
-      if (q.z < 0.35) sp.style.filter = "blur(.6px)";
+      const g = Math.round(118 + q.z * 70 + r() * 30);                  // 회색 118~218 (흰색까지 가지 않게)
+      sp.style.color = `rgb(${g},${g + 4},${g + 2})`;
+      sp.style.opacity = (0.55 + q.z * 0.4).toFixed(2);
+      sp.style.fontSize = (10 + q.z * 6 + r() * 3).toFixed(1) + "px";
+      sp.style.transform = `translate(-50%,-50%) translate(${q.x.toFixed(1)}px, ${q.y.toFixed(1)}px) rotate(${(r() * 360).toFixed(0)}deg) scale(${(0.85 + r() * 0.35).toFixed(2)}, ${(0.7 + r() * 0.45).toFixed(2)})`;
       wad.appendChild(sp);
     }
     const cap = document.createElement("span"); cap.className = "cap"; cap.textContent = `${RM_TEXT} · 🚩 ${m._rep}`;
