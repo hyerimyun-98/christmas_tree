@@ -204,7 +204,7 @@
   #cPhotoWrap img.big{max-height:none;cursor:zoom-out}
   #cPhotoWrap .ld{font:12px var(--code);color:#7fa58c;padding:14px 0}
   #card .sheet{max-height:92vh;overflow:auto}
-  /* ---- 좋아요 / 싫어요 / 신고 ---- */
+  /* ---- 좋아요 / 신고 ---- */
   .react{display:flex;justify-content:center;gap:6px;margin-top:12px}
   .react button{border:1px solid rgba(140,255,170,.22);background:rgba(255,255,255,.03);color:#bcd8c4;border-radius:999px;
     padding:3px 10px;font:11.5px var(--code);cursor:pointer;line-height:1.6}
@@ -341,7 +341,6 @@
       <div class="date" id="cDate"></div>
       <div class="react" id="cReact">
         <button type="button" id="rLike" aria-label="Like">👍 <span>0</span></button>
-        <button type="button" id="rDis" aria-label="Dislike">👎 <span>0</span></button>
         <button type="button" id="rRep" class="rep" aria-label="Report">🚩 Report</button>
       </div>
       <div class="tr">
@@ -511,7 +510,7 @@ const STAR_CH = "*#@&*";
 const STAR_COL = ["#fff6b0","#ffe066","#ffd23f","#ffc21a"];
 const GIFT_ART = ["  \\_/  ","[==|==]","[##|##]","[##|##]"];
 const ORN_ART = ["  _o_  ", " /'@@\\ ", "(@@@@@)", " \\@@@/ "];
-const ORN_ART_S = [" _o_ ", "('@@)", " \\@/ "];   // 모바일(좁은 화면)용 작은 오너먼트
+const ORN_ART_S = ["_o_", "(@)"];   // 모바일(좁은 화면)용 작은 오너먼트
 const SANTA = [
   "   _*_                \\|/      \\|/  ",
   "  (^o^)____ ~~~~~~~~~(.@)~~~~~~(.@) ",
@@ -1123,7 +1122,7 @@ function frame(now){
       m._c = c; m._r = r - 1; m._px = (c + 0.5) * cw; m._py = (r - 0.5) * ch;
     } else {
       const small = W < 600, OA = small ? ORN_ART_S : ORN_ART, ow = OA[0].length;
-      const z = PZ + 0.04, c0 = c - (ow >> 1), r0 = r - (small ? 1 : 2), sh = m.shade;
+      const z = PZ + 0.04, c0 = c - (ow >> 1), r0 = r - (small ? 1 : 2), sh = m.shade;   // 작은 버전: 고리 1줄 + 몸통 1줄
       for (let gr = 0; gr < OA.length; gr++) for (let gc = 0; gc < ow; gc++){
         const chh = OA[gr][gc]; if (chh === " ") continue;
         const col = dim ? (gr === 0 ? "#4a4636" : "#33403a")
@@ -1220,7 +1219,7 @@ function frame(now){
     hits.push({ x: m._px, y: m._py, k, r: Math.max(22, cw * 4) });
     if (m._dim) continue;
     const boost = m._mine ? 1.7 : 1;
-    const rad = Math.max(W < 600 ? 10 : 14, fs * (m.kind === "gift" ? 4 : (W < 600 ? 2.6 : 3.8))) * boost, hg = ctx.createRadialGradient(m._px, m._py, 0, m._px, m._py, rad);
+    const rad = Math.max(W < 600 ? 8 : 14, fs * (m.kind === "gift" ? 4 : (W < 600 ? 1.9 : 3.8))) * boost, hg = ctx.createRadialGradient(m._px, m._py, 0, m._px, m._py, rad);
     hg.addColorStop(0, (boost > 1 ? "#ffe680" : m.col) + (boost > 1 ? "90" : "78")); hg.addColorStop(1, m.col + "00");
     ctx.globalAlpha = 0.75 + 0.25 * Math.sin(t * 3 + k);
     ctx.fillStyle = hg; ctx.fillRect(m._px - rad, m._py - rad, rad * 2, rad * 2);
@@ -1291,13 +1290,14 @@ const EGGS = [
   ["wish",   "🌠", "Wishing Star",   "Find the one special star in the sky and tap it."],
   ["trash",  "🗑", "Trash Smasher",  "Keep tapping the trash can until it breaks."],
   ["cookie", "🍪", "Cookie Friend",  "Tap the tree trunk — someone is hiding behind it."],
+  ["shake",  "📳", "Snow Globe",     "On a phone, shake it hard."],
 ];
 const EGG_TOTAL = EGGS.length;
 const EGG_HINTS = {
   spin: "Spin the tree round and round?", star: "Poke the star a few times?", moon: "Touch the moon?",
   cat: "Bother a napping cat?", sleep: "Leave the tree alone for a while?", konami: "↑ ↑ ↓ ↓ ← → ← → B A?",
   word: "A magic word in your message?", xmas: "Come back on Christmas?",
-  mail: "Knock on a mailbox again and again?", wish: "One star in the sky looks a little different?", trash: "Tap the trash can again and again?", cookie: "Someone is hiding behind the tree trunk?",
+  mail: "Knock on a mailbox again and again?", wish: "One star in the sky looks a little different?", trash: "Tap the trash can again and again?", cookie: "Someone is hiding behind the tree trunk?", shake: "What if the whole screen were a snow globe?",
 };
 let eggListOpen = false;
 // 이스터에그는 모두가 공유해요: 누군가 찾으면 Firebase /eggs 에 기록되고 모두의 카운트가 올라가요
@@ -1612,8 +1612,44 @@ $("#btnMusic").onclick = e => {
   if (Music.on){ Music.stop(); localStorage.setItem("mytree.music", "off"); }
   else { Music.start(); localStorage.setItem("mytree.music", "on"); }
 };
+/* ---------------- 이스터에그: 휴대폰을 흔들면 스노우볼처럼 눈이 펑펑 ----------------
+   아이폰은 동작 센서를 쓰려면 허락이 필요해서, 처음 화면을 터치할 때 한 번 물어봐요. */
+const shake = { last: null, hits: [], cooldown: 0 };
+function onMotion(e){
+  const a = e.accelerationIncludingGravity || e.acceleration; if (!a || a.x == null) return;
+  const cur = { x: a.x || 0, y: a.y || 0, z: a.z || 0 };
+  if (shake.last){
+    const d = Math.abs(cur.x - shake.last.x) + Math.abs(cur.y - shake.last.y) + Math.abs(cur.z - shake.last.z);
+    const now = performance.now();
+    if (d > 28){
+      shake.hits = shake.hits.filter(x => now - x < 1200); shake.hits.push(now);
+      if (shake.hits.length >= 4 && now > shake.cooldown){ shake.hits = []; shake.cooldown = now + 6000; snowGlobe(); }
+    }
+  }
+  shake.last = cur;
+}
+function snowGlobe(){
+  wake();
+  blizzardUntil = t + 9;
+  for (let i = 0; i < 16; i++) flakes.push({ x: rand(0, cols), y: rand(-rows * 0.6, -2), v: rand(2, 4.5), sw: rand(0, TAU) });
+  for (let i = 0; i < 90; i++) parts.push({ chr: Math.random() < 0.5 ? "*" : ".", x: rand(0, cols), y: rand(-rows * 0.5, rows * 0.2), vx: rand(-4, 4), vy: rand(3, 8), life: 0, max: rand(3, 6), pal: ["#ffffff", "#dfefff"], g: 0.6, front: true });
+  if (navigator.vibrate) try { navigator.vibrate([60, 40, 60]); } catch(_){}
+  egg("shake", "📳 Snow globe! You shook the whole tree ❄️");
+}
+let motionOn = false;
+function enableMotion(){
+  if (motionOn || !("DeviceMotionEvent" in window)) return;
+  const start = () => { if (motionOn) return; motionOn = true; addEventListener("devicemotion", onMotion); };
+  const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  if (typeof DeviceMotionEvent.requestPermission === "function"){
+    // 아이폰: 허락을 받아야만 동작 / 그 밖의 기기: 허락 여부와 상관없이 듣기만 켜 둬요
+    DeviceMotionEvent.requestPermission().then(r => { if (r === "granted" || !isIOS) start(); }).catch(() => { if (!isIOS) start(); });
+  } else start();
+}
+
 function firstGesture(e){
   ["pointerdown","keydown","touchend"].forEach(ev => document.removeEventListener(ev, firstGesture, true));
+  enableMotion();
   if (e.target && e.target.closest && e.target.closest("#btnMusic")) return;
   if (localStorage.getItem("mytree.music") !== "off" && !Music.on) Music.start();
 }
@@ -2089,9 +2125,9 @@ $("#form").addEventListener("submit", async e => {
   } finally { btn.disabled = false; }
 });
 
-/* ---------------- 좋아요 · 싫어요 · 신고 ----------------
-   기기마다 고유번호(DEVICE)를 만들어 기억하고, Firebase /reactions/{편지}/{like|dislike|report}/{기기} 에 1을 기록해요.
-   규칙이 "이미 있으면 못 씀"이라 기기당 한 번씩만 누를 수 있고, 좋아요와 싫어요는 둘 중 하나만 돼요.
+/* ---------------- 좋아요 · 신고 ----------------
+   기기마다 고유번호(DEVICE)를 만들어 기억하고, Firebase /reactions/{편지}/{like|report}/{기기} 에 1을 기록해요.
+   규칙이 "이미 있으면 못 씀"이라 기기당 한 번씩만 누를 수 있어요 (다시 누르면 취소).
    신고가 REPORT_LIMIT(2)개 이상이면 "삭제된 게시물입니다."로 바뀌고 쓰레기통으로 가요. */
 const REPORT_LIMIT = 2;
 const DEVICE = (() => {
@@ -2102,7 +2138,7 @@ const DEVICE = (() => {
   }
   return d;
 })();
-let reactions = {};          // { 편지id: { like: {기기:1}, dislike: {...}, report: {...} } }
+let reactions = {};          // { 편지id: { like: {기기:1}, report: {...} } }
 let reactionsLoaded = false;
 let deletedIds = new Set();
 const rc = (m, type) => Object.keys(((reactions[m.id] || {})[type]) || {}).length;
@@ -2145,7 +2181,6 @@ function renderReact(m){
   // 삭제된 편지는 내가 신고했던 경우에만 "신고 취소" 버튼이 남아요
   $("#cReact").classList.toggle("hidden", del && !myRep);
   $("#rLike").classList.toggle("hidden", del);
-  $("#rDis").classList.toggle("hidden", del);
   if (del){
     $("#cMsg").textContent = RM_TEXT;
     $("#cPhotoWrap").classList.add("hidden"); $("#cPhotoWrap").innerHTML = "";
@@ -2158,9 +2193,7 @@ function renderReact(m){
     if (m.p && !$("#cPhotoWrap").children.length) showCardPhoto(m);
   }
   $("#rLike span").textContent = m._like || 0;
-  $("#rDis span").textContent = m._dis || 0;
   $("#rLike").classList.toggle("on", iDid(m, "like"));
-  $("#rDis").classList.toggle("on", iDid(m, "dislike"));
   $("#rRep").classList.toggle("on", myRep);
   const asking = reportAsk.id === m.id && t < reportAsk.until;
   $("#rRep").classList.toggle("ask", asking && !myRep);
@@ -2195,7 +2228,7 @@ async function react(type, m){
     // 이미 눌렀으면 → 취소
     if (iDid(m, type)){
       if (await setReaction(m, type, false))
-        toast(type === "like" ? "👍 Like removed" : type === "dislike" ? "👎 Dislike removed" : "🚩 Report withdrawn");
+        toast(type === "like" ? "👍 Like removed" : "🚩 Report withdrawn");
       return;
     }
     if (type === "report"){
@@ -2211,10 +2244,8 @@ async function react(type, m){
       if (await setReaction(m, "report", true)) toast("🚩 Reported. Tap 🚩 again anytime to undo");
       return;
     }
-    // 좋아요 ↔ 싫어요는 둘 중 하나: 반대쪽을 먼저 취소
-    const other = type === "like" ? "dislike" : "like";
-    if (iDid(m, other) && !(await setReaction(m, other, false))) return;
-    if (await setReaction(m, type, true)) toast(type === "like" ? "👍 Liked!" : "👎 Noted");
+    if (type !== "like") return;
+    if (await setReaction(m, type, true)) toast("👍 Liked!");
   } finally { reacting = false; }
 }
 function refreshReactViews(m){
@@ -2224,7 +2255,6 @@ function refreshReactViews(m){
 }
 $("#cBack").onclick = backOv;
 $("#rLike").onclick = () => react("like");
-$("#rDis").onclick = () => react("dislike");
 $("#rRep").onclick = () => react("report");
 
 // 목록에서 바로 누를 수 있는 작은 이모지 버튼 묶음
@@ -2234,13 +2264,12 @@ function makeRx(m){
     const b = document.createElement("button"); b.type = "button"; b.textContent = label;
     if (on) b.classList.add("on");
     if (type === "report" && reportAsk.id === m.id && t < reportAsk.until && !on) b.classList.add("ask");
-    b.title = type === "like" ? "Like" : type === "dislike" ? "Dislike" : (on ? "Undo report" : "Report");
+    b.title = type === "like" ? "Like" : (on ? "Undo report" : "Report");
     b.onclick = e => { e.stopPropagation(); react(type, m); };
     box.appendChild(b);
   };
   if (!m._del){
     add("like", `👍${m._like || ""}`, iDid(m, "like"));
-    add("dislike", `👎${m._dis || ""}`, iDid(m, "dislike"));
     add("report", "🚩", iDid(m, "report"));
   } else if (iDid(m, "report")) add("report", "🚩 undo", true);
   return box;
@@ -2263,7 +2292,7 @@ function renderBest(){
   });
 }
 
-/* 마을회관 보드: 좋아요 BEST / 싫어요 BEST */
+/* 마을회관 보드: 좋아요 BEST */
 function renderBoard(){
   const box = $("#mbBoard"); box.innerHTML = "";
   const section = (title, key) => {
@@ -2283,7 +2312,6 @@ function renderBoard(){
     box.appendChild(ul);
   };
   section("🏆 Most liked", "_like");
-  section("💀 Most disliked", "_dis");
 }
 
 /* ---------------- 쓰레기통 ---------------- */
@@ -2408,7 +2436,6 @@ function makePreview(n){
   msgs.forEach((m, i) => {
     const r = reactions[m.id] = { like: {}, dislike: {}, report: {} };
     for (let k = 0; k < (i * 7) % 6; k++) r.like["dev" + k] = 1;
-    for (let k = 0; k < (i * 5) % 4; k++) r.dislike["dvx" + k] = 1;
     if (i === 3) for (let k = 0; k < 3; k++) r.report["rp" + k] = 1;
   });
   reactionsLoaded = true;
