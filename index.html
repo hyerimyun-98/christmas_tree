@@ -261,6 +261,10 @@
   .react button.rep{color:#8a9a90;border-style:dashed}
   .react button.rep.on{color:#ff8fa8;border-color:#ff8fa8;background:rgba(255,100,130,.08)}
   .react button.rep.ask{color:#ffb3c1;border-color:#ff8fa8}
+  .react.own{margin-top:6px}
+  #form.editing .noEdit{display:none!important}
+  #form.editing .two{grid-template-columns:1fr}
+  #cDate .ed{color:#7fa58c;font-style:italic}
   /* 신고로 삭제된 편지: 회색으로 바랜 느낌 */
   #card .sheet.removed{filter:grayscale(1) brightness(.8)}
   #card .sheet.removed .msg{color:#8b8f94;font-style:italic;letter-spacing:.02em}
@@ -401,14 +405,14 @@
       <label for="fText">Message</label>
       <textarea id="fText" rows="3" maxlength="80" placeholder="Merry Christmas! Thanks for this year :) (or just send a photo)"></textarea>
       <div class="count"><span id="fCount">0</span>/80</div>
-      <label>Photo (optional)</label>
-      <div class="photoRow">
+      <label class="noEdit">Photo (optional)</label>
+      <div class="photoRow noEdit">
         <label class="pick" for="fPhoto" id="fPhotoBtn">📷 Add a photo</label>
         <input type="file" id="fPhoto" accept="image/*" hidden>
         <div id="fPhotoPrev" class="hidden"><img id="fPhotoImg" alt="Selected photo"><button type="button" id="fPhotoDel" aria-label="Remove photo">✕</button></div>
       </div>
       <div class="two">
-        <div><label for="fFrom">From</label><select id="fFrom"></select>
+        <div class="noEdit"><label for="fFrom">From</label><select id="fFrom"></select>
           <input type="text" id="fFromOther" maxlength="12" placeholder="Your name" class="hidden" style="margin-top:6px"></div>
         <div><label for="fTo">To</label><select id="fTo"></select></div>
       </div>
@@ -417,6 +421,8 @@
         <label><input type="radio" name="kind" value="ornament" checked><span>🔴 Ornament</span></label>
         <label><input type="radio" name="kind" value="gift"><span>🎁 Gift box</span></label>
         <label><input type="radio" name="kind" value="globe"><span>🔮 Snow globe</span></label>
+        <label><input type="radio" name="kind" value="cookie"><span>🍪 Cookie</span></label>
+        <label><input type="radio" name="kind" value="candy"><span>🍭 Candy cane</span></label>
       </div>
       <label>Color</label>
       <div class="swatches" id="swatches"></div>
@@ -439,6 +445,10 @@
       <div class="react" id="cReact">
         <button type="button" id="rLike" aria-label="Like">👍 <span>0</span></button>
         <button type="button" id="rRep" class="rep" aria-label="Report">🚩 Report</button>
+      </div>
+      <div class="react own hidden" id="cOwn">
+        <button type="button" id="cEdit">✏️ Edit</button>
+        <button type="button" id="cDel" class="rep">🗑 Delete</button>
       </div>
       <div class="tr">
         <div class="trRow"><select id="trLang" aria-label="Translate to"></select><button id="trBtn">🌐 Translate</button></div>
@@ -634,8 +644,14 @@ const STAR_COL = ["#fff6b0","#ffe066","#ffd23f","#ffc21a"];
 const GIFT_ART = ["  \\_/  ","[==|==]","[##|##]","[##|##]"];
 const GLOBE_ART = ["  .---.  ", " / . ^ \\ ", "| . ^^^ |", " \\_.|._/ ", " [=====] "];
 const GLOBE_ART_S = [" .-. ", "(.^.)", "[===]"];
-const KIND_ICON = { ornament: "🔴", gift: "🎁", globe: "🔮" };
-const kindOf = k => (k === "gift" || k === "globe") ? k : "ornament";
+const KIND_ICON = { ornament: "🔴", gift: "🎁", globe: "🔮", cookie: "🍪", candy: "🍭" };
+const kindOf = k => (k === "gift" || k === "globe" || k === "cookie" || k === "candy") ? k : "ornament";
+const onTree = m => m.kind !== "gift" && m.kind !== "globe";   // 트리에 매다는 장식 (오너먼트·쿠키·캔디케인)
+// 진저브레드 쿠키 / 캔디케인 (큰 화면 4줄, 작은 화면 2줄)
+const GINGER = ["  _o_  ", "  (\")  ", " -(:)- ", "  / \\  "];
+const GINGER_S = ["(\")", "/:\\"];
+const CANE = ["  ,-.  ", "  | |  ", "    |  ", "    |  "];
+const CANE_S = [",-.", "| |"];
 const ORN_ART = ["  _o_  ", " /'@@\\ ", "(@@@@@)", " \\@@@/ "];
 const ORN_ART_S = ["_o_", "(@)"];   // 모바일(좁은 화면)용 작은 오너먼트
 const SANTA = [
@@ -1078,6 +1094,7 @@ function drawExtras(){
 
 function stepActors(dt){
   stepPostSanta(dt);
+  stepBear(dt);
   // 산타
   if (LEVEL >= 5 && !santa.active && t > santa.nextAt) summon("santa");
   if (santa.active){
@@ -1213,6 +1230,164 @@ async function letterRoute(m, sx, sy){
   toast(`📬 Delivered to ${isForAll(m) ? "everyone's hall" : m.to + "'s house"}!`, 2200);
 }
 
+/* ---------------- 큰 곰 (3D): 화면을 오래 켜두면 가끔 나타나서 트리를 흔들어요 ----------------
+   트리처럼 점들로 만든 입체 곰이에요. 타원체(몸·머리·귀·팔·다리·주둥이)의 표면에 점을 뿌리고,
+   빛 방향에 따라 밝기를 정해서 글자(RAMP)와 갈색 톤으로 그려요. 트리와 같은 원근·깊이(z-buffer)를 써서
+   트리 뒤에 가려지기도 해요. 키는 트리와 비슷해요. */
+const FORCE_BEAR = new URLSearchParams(location.search).has("bear");
+const bear = { phase: "off", bx: -2.4, bz: -0.32, yaw: 1.3, t0: 0, next: FORCE_BEAR ? 3 : 240, sway: 0, walk: 0 };   // 4분 넘게 켜두면 30초마다 15% 확률
+const shakeFx = { on: false, fallAt: 0, retAt: 0 };
+const BEAR_STOP = -0.76;
+// 좁은 화면에선 곰이 화면 밖으로 나가지 않게 트리 뒤쪽으로 더 가까이 서요
+function bearStop(){ const x = Math.max(BEAR_STOP, 0.34 - cx / (scale * 0.9)); return { x, z: -0.32 - (x - BEAR_STOP) * 0.8 }; }
+const FUR = Array.from({ length: 16 }, (_, lv) => `hsl(24,${44 + lv}%,${(8 + lv * 3.3).toFixed(1)}%)`);
+const TAN = Array.from({ length: 16 }, (_, lv) => `hsl(35,58%,${(42 + lv * 2.9).toFixed(1)}%)`);
+const bearPts = [];
+(function buildBear(){
+  const r = rng(1225);
+  // g: 0 몸통, 1 머리, 2 왼팔, 3 오른팔, 4 왼다리, 5 오른다리 / k: 0 털, 1 밝은 털, 2 눈, 3 코
+  // 팔·다리는 어깨·엉덩이(pivot)를 기준으로 한 좌표로 만들어서 흔들 수 있게 해요 (y는 아래가 +)
+  const parts = [
+    { g: 0, c: [0, -0.44, 0],      rad: [0.29, 0.33, 0.24], k: 0 },
+    { g: 0, c: [0, -0.40, 0.11],   rad: [0.18, 0.22, 0.15], k: 1 },   // 배
+    { g: 1, c: [0, -0.88, 0],      rad: [0.21, 0.19, 0.19], k: 0 },
+    { g: 1, c: [-0.165, -1.04, -0.02], rad: [0.09, 0.09, 0.055], k: 0 },
+    { g: 1, c: [ 0.165, -1.04, -0.02], rad: [0.09, 0.09, 0.055], k: 0 },
+    { g: 1, c: [-0.165, -1.04, 0.02], rad: [0.05, 0.05, 0.03], k: 1 },
+    { g: 1, c: [ 0.165, -1.04, 0.02], rad: [0.05, 0.05, 0.03], k: 1 },
+    { g: 1, c: [0, -0.82, 0.16],   rad: [0.115, 0.085, 0.09], k: 1 },   // 주둥이
+    { g: 1, c: [0, -0.86, 0.245],  rad: [0.045, 0.03, 0.03], k: 3, z: 0.03 },   // 코
+    { g: 1, c: [-0.085, -0.94, 0.165], rad: [0.028, 0.032, 0.02], k: 2, z: 0.03 },   // 눈
+    { g: 1, c: [ 0.085, -0.94, 0.165], rad: [0.028, 0.032, 0.02], k: 2, z: 0.03 },
+    { g: 2, c: [0, 0.2, 0],        rad: [0.085, 0.22, 0.09], k: 0, pv: [-0.27, -0.66, 0] },
+    { g: 3, c: [0, 0.2, 0],        rad: [0.085, 0.22, 0.09], k: 0, pv: [ 0.27, -0.66, 0] },
+    { g: 2, c: [0, 0.39, 0.02],    rad: [0.07, 0.05, 0.07], k: 1, pv: [-0.27, -0.66, 0] },
+    { g: 3, c: [0, 0.39, 0.02],    rad: [0.07, 0.05, 0.07], k: 1, pv: [ 0.27, -0.66, 0] },
+    { g: 4, c: [0, 0.13, 0],       rad: [0.11, 0.15, 0.11], k: 0, pv: [-0.14, -0.26, 0] },
+    { g: 5, c: [0, 0.13, 0],       rad: [0.11, 0.15, 0.11], k: 0, pv: [ 0.14, -0.26, 0] },
+    { g: 4, c: [0, 0.245, 0.05],   rad: [0.1, 0.035, 0.11], k: 1, pv: [-0.14, -0.26, 0] },
+    { g: 5, c: [0, 0.245, 0.05],   rad: [0.1, 0.035, 0.11], k: 1, pv: [ 0.14, -0.26, 0] },
+  ];
+  for (const P of parts){
+    const [a, b, c] = P.rad, area = 4 * Math.PI * Math.pow((a * b + a * c + b * c) / 3, 0.5) ** 2 / 1;   // 대략적인 겉넓이
+    const n = Math.max(40, Math.round(area * 6200));
+    for (let i = 0; i < n; i++){
+      const u = r() * 2 - 1, th = r() * TAU, s = Math.sqrt(1 - u * u);
+      const ux = s * Math.cos(th), uy = u, uz = s * Math.sin(th);
+      let nx = ux / a, ny = uy / b, nz = uz / c; const L = Math.hypot(nx, ny, nz); nx /= L; ny /= L; nz /= L;
+      bearPts.push({ g: P.g, k: P.k, x: P.c[0] + a * ux, y: P.c[1] + b * uy, z: P.c[2] + c * uz, nx, ny, nz,
+        pv: P.pv || null, zb: P.z || 0, n: r() });
+    }
+  }
+})();
+function stepBear(dt){
+  if (bear.phase === "off"){
+    if (t > bear.next && !document.hidden && !shakeFx.on){
+      if (FORCE_BEAR || Math.random() < 0.15){ Object.assign(bear, { phase: "in", bx: -2.6, bz: bearStop().z, yaw: 1.25, walk: 0 }); }
+      else bear.next = t + 30;
+    }
+  } else if (bear.phase === "in"){
+    bear.bx += dt * 0.42; bear.walk += dt * 5.5;
+    const st = bearStop(); bear.bz = st.z;
+    if (bear.bx > st.x - 0.35) bear.yaw += (0.55 - bear.yaw) * Math.min(1, dt * 3);   // 트리 쪽으로 몸을 돌려요
+    if (bear.bx >= st.x){
+      bear.bx = st.x; bear.phase = "shake"; bear.t0 = t;
+      for (const m of msgs){ delete m._fc; delete m._fr; delete m._fdone; }
+      Object.assign(shakeFx, { on: true, fallAt: t + 0.7, retAt: 0 });
+      const h = bearHead(); bubbles.push({ x: h.x, y: h.y, text: "GRRRR! 🐻", until: t + 2.2 });
+      egg("bear", "🐻 A big bear came and shook the tree!");
+    }
+  } else if (bear.phase === "shake"){
+    const k = Math.min(1, (t - bear.t0) * 2.5);
+    bear.sway = Math.sin(t * 26) * scale * 0.04 * k;
+    if (Math.random() < dt * 30) parts.push({ x: rand(cx / cw - 14, cx / cw + 14), y: rand(rows * 0.12, groundRow - 4), vx: rand(-2, 2), vy: rand(1, 4), life: 0, max: rand(0.5, 1), pal: ["#4fd18b", "#2e8f5a"], g: 6, chr: pick([",", "'", "*"]) });
+    if (t - bear.t0 > 4.4){
+      bear.phase = "out"; bear.sway = 0; bear.walk = 0;
+      const h = bearHead(); bubbles.push({ x: h.x, y: h.y, text: "…bye 🐾", until: t + 1.6 });
+    }
+  } else {
+    bear.yaw += (-1.25 - bear.yaw) * Math.min(1, dt * 2.5);   // 돌아서서
+    if (bear.yaw < -0.6){ bear.bx -= dt * 0.5; bear.walk += dt * 6; }
+    if (bear.bx < -2.7){ bear.phase = "off"; shakeFx.retAt = t; bear.next = t + 600; }
+  }
+  if (shakeFx.on && shakeFx.retAt && t > shakeFx.retAt + 2.4){
+    shakeFx.on = false;
+    for (const m of msgs){ delete m._fc; delete m._fr; delete m._fdone; }
+  }
+}
+// 곰 전용 원근 투영 (트리처럼 빙글 돌지 않아요)
+function projB(x, y, z){
+  const f = 1 / (1 - z * 0.3);
+  PX = cx + x * scale * f;
+  PY = cy + ((y - 0.55) * COST + z * SINT) * scale * f;
+  PZ = z; PF = f;
+}
+function bearHead(){ projB(bear.bx, GIFT_Y, bear.bz); const fix = (groundRow - 0.8) * ch - PY; projB(bear.bx, GIFT_Y - 1.2, bear.bz); return { x: PX, y: PY + fix }; }
+function drawBear(){
+  const shake = bear.phase === "shake";
+  const cyw = Math.cos(bear.yaw), syw = Math.sin(bear.yaw);
+  const walking = (bear.phase === "in" || (bear.phase === "out" && bear.yaw < -0.6));
+  const step = walking ? Math.sin(bear.walk) : 0, bob = walking ? Math.abs(Math.cos(bear.walk)) * 0.05 : 0;
+  const roll = walking ? Math.sin(bear.walk) * 0.07 : 0;   // 뒤뚱뒤뚱 좌우로 기우뚱
+  const jig = shake ? Math.sin(t * 26) * 0.02 : 0;
+  // 관절 각도 (라디안): 걸을 땐 팔다리를 번갈아, 흔들 땐 두 팔을 앞으로 뻗어 트리를 잡아요
+  const armA = shake ? [1.35 + Math.sin(t * 26) * 0.12, 1.35 - Math.sin(t * 26) * 0.12] : [step * 0.8, -step * 0.8];
+  const legA = shake ? [0, 0] : [-step * 0.75, step * 0.75];
+  const headTilt = shake ? Math.sin(t * 13) * 0.08 : walking ? Math.sin(bear.walk * 2) * 0.05 : 0;
+  const LX = -0.42, LY = -0.38, LZ = 0.82;
+  if (bear.phase === "off") return;
+  // 곰은 트리보다 살짝 뒤에 서 있어서 원근 때문에 떠 보여요 → 발이 땅선에 닿게 화면 위치를 맞춰요
+  projB(bear.bx, GIFT_Y, bear.bz);
+  const footFix = (groundRow - 0.8) * ch - PY;
+  // 점(또는 방향)을 관절 → 고개 → 뒤뚱 → 몸 돌리기 순서로 옮겨요
+  const V = [0, 0, 0];
+  const xf = (p, x, y, z, dir) => {
+    if (p.pv){
+      const a = p.g === 2 ? armA[0] : p.g === 3 ? armA[1] : p.g === 4 ? legA[0] : legA[1];
+      const ca2 = Math.cos(a), sa2 = Math.sin(a), y2 = y * ca2 - z * sa2; z = y * sa2 + z * ca2; y = y2;
+      if (!dir){ x += p.pv[0]; y += p.pv[1]; z += p.pv[2]; if (p.g >= 4 && walking) y -= Math.max(0, p.g === 4 ? -step : step) * 0.06; }
+    } else if (p.g === 1 && headTilt){
+      const cz = Math.cos(headTilt), sz = Math.sin(headTilt), oy = dir ? 0 : 0.7;
+      const x2 = x * cz - (y + oy) * sz; y = x * sz + (y + oy) * cz - oy; x = x2;
+    }
+    if (roll){ const cr = Math.cos(roll), sr = Math.sin(roll), x3 = x * cr - y * sr; y = x * sr + y * cr; x = x3; }
+    V[0] = x * cyw + z * syw; V[1] = y; V[2] = -x * syw + z * cyw;
+  };
+  const toScreen = () => { projB(bear.bx + jig + V[0], GIFT_Y + V[1] - bob, bear.bz + V[2]); PY += footFix; };
+  for (let i = 0; i < bearPts.length; i++){
+    const p = bearPts[i];
+    xf(p, p.nx, p.ny, p.nz, true); const nxr = V[0], ny = V[1], nzr = V[2];
+    xf(p, p.x, p.y, p.z, false); toScreen();
+    let b = 0.2 + 0.7 * Math.max(0, nxr * LX + ny * LY + nzr * LZ) + 0.12 * p.n; if (b > 1) b = 1;
+    let chr, col;
+    if (p.k === 2){ chr = "o"; col = "#fff7e8"; }
+    else if (p.k === 3){ chr = "@"; col = "#24140b"; }
+    else { chr = RAMP[Math.min(RAMP.length - 1, (b * RAMP.length) | 0)]; col = (p.k === 1 ? TAN : FUR)[(b * 15.99) | 0]; }
+    put((PX / cw) | 0, (PY / ch) | 0, PZ + p.zb, chr, col, 0, 0);
+  }
+}
+// 흔들린 장식이 떨어졌다가 곰이 가면 제자리로 돌아가요
+function fallPos(m, c, r, gr){
+  if (m._fd === undefined){ const R = rng(hashStr(m.id + "~fall")); m._fd = R() * 0.9; m._fy = R() < 0.85; m._fdx = Math.round((R() - 0.5) * 8); }
+  if (!m._fy || t < shakeFx.fallAt + m._fd) return { c, r, f: false };
+  if (m._fc === undefined){ m._fc = c; m._fr = r; }
+  const e = t - shakeFx.fallAt - m._fd, G = 34;
+  const cc = m._fc + Math.round(m._fdx * Math.min(1, e * 1.5));
+  let pr = Math.min(gr, m._fr + G * e * e);
+  if (pr >= gr){ const k = e - Math.sqrt(Math.max(0, gr - m._fr) / G); if (k < 0.35) pr = gr - Math.sin(k / 0.35 * Math.PI) * 1.2; }
+  let pc = cc;
+  if (shakeFx.retAt){
+    const a = Math.min(1, Math.max(0, (t - shakeFx.retAt - m._fd * 0.7) / 1.1));
+    if (a >= 1){
+      if (!m._fdone){ m._fdone = true; for (let i = 0; i < 4; i++) parts.push({ x: c + rand(-1, 1), y: r + rand(-1, 1), vx: rand(-1, 1), vy: -rand(0.5, 1.5), life: 0, max: rand(0.4, 0.8), pal: ["#fff6c2", "#ffe680"], spark: true, front: true }); }
+      return { c, r, f: false };
+    }
+    const ee = a * a * (3 - 2 * a);
+    pc = cc + (c - cc) * ee; pr = gr + (r - gr) * ee - Math.sin(a * Math.PI) * 3;
+  }
+  return { c: Math.round(pc), r: Math.round(pr), f: true };
+}
+
 /* 색상 함수 */
 function santaColor(chh, r, c){
   if (c <= 10){
@@ -1316,7 +1491,7 @@ function frame(now){
     spinLog.length = 0; rainbowUntil = swayUntil = t + 6;
     egg("spin", "🌀 Too much spinning! The tree is dizzy");
   }
-  sway = t < swayUntil ? Math.sin(t * 9) * scale * 0.04 * (swayUntil - t) / 6 : 0;
+  sway = (t < swayUntil ? Math.sin(t * 9) * scale * 0.04 * (swayUntil - t) / 6 : 0) + (bear.phase === "shake" ? bear.sway : 0);
 
   ca = Math.cos(angle); sa = Math.sin(angle);
   stepActors(dt);
@@ -1361,6 +1536,7 @@ function frame(now){
   drawPhotoArts();
   if (santa.active) sprite(SANTA, Math.round(santa.x), Math.round(rows * 0.13 + Math.sin(t * 2.2) * 1.2), -55, santaColor, 0);
   if (postSanta.active) sprite(SANTA, Math.round(postSanta.x), Math.round(postSanta.y), 0.95, santaColor, 0);
+  if (bear.phase !== "off") drawBear();
   if (ufo.active){
     const ur = Math.round(rows * 0.17 + Math.sin(t * 1.5) * 1.5), uc = Math.round(ufo.x);
     sprite(UFO, uc, ur, -58, ufoColor, 0);
@@ -1457,11 +1633,15 @@ function frame(now){
       }
       m._c = c; m._r = r - 1; m._px = (c + 0.5) * cw; m._py = (r - 0.5) * ch;
     } else {
-      const small = W < 600, OA = small ? ORN_ART_S : ORN_ART, ow = OA[0].length;
-      const z = PZ + 0.04, c0 = c - (ow >> 1), r0 = r - (small ? 1 : 2), sh = m.shade;   // 작은 버전: 고리 1줄 + 몸통 1줄
+      const small = W < 600, sh = m.shade;
+      const OA = m.kind === "cookie" ? (small ? GINGER_S : GINGER) : m.kind === "candy" ? (small ? CANE_S : CANE) : (small ? ORN_ART_S : ORN_ART), ow = OA[0].length;
+      if (shakeFx.on){ const q = fallPos(m, c, r, groundRow - (small ? 1 : 2)); c = q.c; r = q.r; if (q.f) PZ = 0.8; }   // 곰이 흔들면 후두둑
+      const z = PZ + 0.04, c0 = c - (ow >> 1), r0 = r - (small ? 1 : 2);   // 작은 버전: 고리 1줄 + 몸통 1줄
       for (let gr = 0; gr < OA.length; gr++) for (let gc = 0; gc < ow; gc++){
         const chh = OA[gr][gc]; if (chh === " ") continue;
-        const col = dim ? (gr === 0 ? "#4a4636" : "#33403a")
+        const col = m.kind === "cookie" ? (dim ? "#4a4636" : (!small && gr === 0) ? (chh === "o" ? "#fff2b0" : "#e9c45a") : chh === "\"" || chh === "-" ? "#ffffff" : chh === ":" ? (hl && blink ? "#ffffff" : m.col) : hl && blink ? "#ffe2b8" : "#d08a4e")
+          : m.kind === "candy" ? (dim ? "#4a4636" : hl && blink ? "#ffffff" : (gr + gc) % 2 ? "#ffffff" : m.col)
+          : dim ? (gr === 0 ? "#4a4636" : "#33403a")
           : gr === 0 ? (chh === "o" ? "#fff2b0" : "#e9c45a")
           : hl && blink ? "#ffffff"
           : chh === "'" ? "#ffffff"
@@ -1555,7 +1735,7 @@ function frame(now){
     hits.push({ x: m._px, y: m._py, k, r: Math.max(22, cw * 4) });
     if (m._dim) continue;
     const boost = m._mine ? 1.7 : 1;
-    const rad = Math.max(W < 600 ? 8 : 14, fs * (m.kind !== "ornament" ? 4 : (W < 600 ? 1.9 : 3.8))) * boost, hg = ctx.createRadialGradient(m._px, m._py, 0, m._px, m._py, rad);
+    const rad = Math.max(W < 600 ? 8 : 14, fs * (!onTree(m) ? 4 : (W < 600 ? 1.9 : 3.8))) * boost, hg = ctx.createRadialGradient(m._px, m._py, 0, m._px, m._py, rad);
     hg.addColorStop(0, (boost > 1 ? "#ffe680" : m.col) + (boost > 1 ? "90" : "78")); hg.addColorStop(1, m.col + "00");
     ctx.globalAlpha = 0.75 + 0.25 * Math.sin(t * 3 + k);
     ctx.fillStyle = hg; ctx.fillRect(m._px - rad, m._py - rad, rad * 2, rad * 2);
@@ -1629,13 +1809,14 @@ const EGGS = [
   ["shake",  "📳", "Snow Globe",     "On a phone, shake it hard."],
   ["float",  "💖", "Number One Fan", "Tap a floating best letter 5 times, fast."],
   ["globe",  "🔮", "Inside the Globe", "Find the little golden snow globe on the ground and tap it."],
+  ["bear",   "🐻", "Big Bear",       "Keep the tree open for a long while — someone big drops by now and then."],
 ];
 const EGG_TOTAL = EGGS.length;
 const EGG_HINTS = {
   spin: "Spin the tree round and round?", star: "Poke the star a few times?", moon: "Touch the moon?",
   cat: "Bother a napping cat?", sleep: "Leave the tree alone for a while?", konami: "↑ ↑ ↓ ↓ ← → ← → B A?",
   word: "A magic word in your message?", xmas: "Come back on Christmas?",
-  mail: "Knock on a mailbox again and again?", wish: "One star in the sky looks a little different?", trash: "Tap the trash can again and again?", cookie: "Someone is hiding behind the tree trunk?", shake: "What if the whole screen were a snow globe?", float: "Cheer for a floating letter again and again?", globe: "One snow globe on the ground isn't a letter…",
+  mail: "Knock on a mailbox again and again?", wish: "One star in the sky looks a little different?", trash: "Tap the trash can again and again?", cookie: "Someone is hiding behind the tree trunk?", shake: "What if the whole screen were a snow globe?", float: "Cheer for a floating letter again and again?", globe: "One snow globe on the ground isn't a letter…", bear: "Leave the tree open for a long, long time…?",
 };
 let eggListOpen = false;
 // 이스터에그는 모두가 공유해요: 누군가 찾으면 Firebase /eggs 에 기록되고 모두의 카운트가 올라가요
@@ -1664,6 +1845,7 @@ function egg(id, msg){
 let eggNameId = null;
 function askEggName(id){
   const e = EGGS.find(x => x[0] === id); if (!e) return;
+  if (bear.phase !== "off" || shakeFx.on){ setTimeout(() => askEggName(id), 1000); return; }   // 곰 쇼가 끝난 뒤에 물어봐요
   eggNameId = id;
   $("#enIcon").textContent = e[1];
   $("#enTitle").textContent = `You found “${e[2]}” first!`;
@@ -1772,7 +1954,7 @@ $("#gEggTog").onclick = () => { eggListOpen = !eggListOpen; renderGuide(); };
 /* ---------------- HUD ---------------- */
 function updateHud(){
   const deg = ((angle * 180 / Math.PI) % 360 + 360) % 360;
-  const orn = msgs.filter(m => m.kind === "ornament").length, gifts = msgs.filter(m => m.kind === "gift").length, globes = msgs.length - orn - gifts;
+  const orn = msgs.filter(onTree).length, gifts = msgs.filter(m => m.kind === "gift").length, globes = msgs.length - orn - gifts;
   const nextN = CONFIG.PER_LEVEL - (msgs.length % CONFIG.PER_LEVEL);
   $("#hud").innerHTML =
     `<span class="t">@my.tree</span>\nrotation  ${deg.toFixed(2)}°\nlights    ${LIGHT_COUNT}\nletters   ${lettersDrawn.toLocaleString()}\nwishes    ${msgs.length}  (🔴${orn} 🎁${gifts} 🔮${globes})\n` +
@@ -2137,7 +2319,7 @@ function openCard(m){
   faceTo(m, 6);
   $("#cIcon").textContent = KIND_ICON[kindOf(m.kind)];
   $("#cIcon").style.filter = `drop-shadow(0 0 10px ${m.col})`;
-  $("#cHead").textContent = m.kind === "gift" ? "// gift.open()" : m.kind === "globe" ? "// snowglobe.shake()" : "// ornament.read()";
+  $("#cHead").textContent = { gift: "// gift.open()", globe: "// snowglobe.shake()", cookie: "// cookie.bite()", candy: "// candycane.unwrap()" }[m.kind] || "// ornament.read()";
   if (m.kind === "globe" && !m._del){   // 스노우볼을 열면 화면에 눈이 살짝 흩날려요
     for (let i = 0; i < 40; i++) parts.push({ chr: Math.random() < 0.5 ? "*" : ".", x: rand(0, cols), y: rand(-rows * 0.3, 0), vx: rand(-2, 2), vy: rand(3, 7), life: 0, max: rand(2, 4), pal: ["#ffffff", "#dfefff"], g: 0.5, front: true });
   }
@@ -2149,6 +2331,9 @@ function openCard(m){
   markRead(m.id);
   $("#cDate").textContent = m.t ? new Date(m.t).toLocaleString("en-US", { month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
   renderReact(m);
+  $("#cOwn").classList.toggle("hidden", !canEdit(m));
+  $("#cDel").classList.remove("ask"); $("#cDel").textContent = "🗑 Delete";
+  if (m._edited){ const ed = document.createElement("span"); ed.className = "ed"; ed.textContent = " · edited"; $("#cDate").appendChild(ed); }
   pushOv("card");
 }
 function openRandom(){
@@ -2454,7 +2639,103 @@ $("#fFrom").onchange = e => {
   if (other) setTimeout(() => $("#fFromOther").focus(), 30);
 };
 fillMemberSelect($("#fTo"), ["", "🎄 Everyone"], "");
-$("#btnAdd").onclick = () => { $("#modal").classList.remove("hidden"); setTimeout(() => $("#fText").focus(), 50); };
+$("#btnAdd").onclick = () => { setEditMode(null); $("#modal").classList.remove("hidden"); setTimeout(() => $("#fText").focus(), 50); };
+/* ---------------- 내 편지 수정 · 삭제 ----------------
+   편지를 쓴 기기(DEVICE)만 고칠 수 있어요. 바뀐 내용은 /mods/{편지id} 에 저장되고 모두에게 반영돼요. */
+let editId = null, mods = {};
+const canEdit = m => !!m && !!m.dev && m.dev === DEVICE && !m._del;
+function pickColor(k){
+  selColor = Object.prototype.hasOwnProperty.call(COLORS, k) ? k : "red";
+  $("#swatches").querySelectorAll("button").forEach(x => x.classList.toggle("on", x.title === selColor));
+}
+function setEditMode(m){
+  editId = m ? m.id : null;
+  $("#form").classList.toggle("editing", !!m);
+  $("#mTitle").textContent = m ? "Edit your letter ✏️" : "Hang a message on the tree 🎄";
+  $("#fSubmit").textContent = m ? "Save changes" : "Hang it!";
+  if (m){
+    $("#fText").value = m.text; $("#fCount").textContent = String(m.text.length);
+    $("#fTo").value = CONFIG.MEMBERS.includes(m.to) ? m.to : "";
+    const r = document.querySelector(`input[name="kind"][value="${kindOf(m.kind)}"]`); if (r) r.checked = true;
+    pickColor(m.color);
+  } else if ($("#form").dataset.wasEdit){
+    $("#fText").value = ""; $("#fCount").textContent = "0";
+  }
+  $("#form").dataset.wasEdit = m ? "1" : "";
+}
+function openEdit(m){
+  if (!canEdit(m)) return;
+  closeAllOv();
+  setTimeout(() => { setEditMode(m); $("#modal").classList.remove("hidden"); setTimeout(() => $("#fText").focus(), 50); }, 80);
+}
+function applyMods(){
+  let changed = false;
+  for (let i = msgs.length - 1; i >= 0; i--){
+    const m = msgs[i], md = mods[m.id];
+    if (!md || typeof md !== "object" || md.t === m._modT || !m.dev || md.dev !== m.dev) continue;
+    m._modT = md.t; changed = true;
+    if (md.del){ msgs.splice(i, 1); continue; }
+    if (typeof md.text === "string") m.text = md.text.slice(0, CONFIG.MAX_TEXT);
+    m.to = String(CONFIG.RENAMED[md.to] || md.to || "").slice(0, CONFIG.MAX_NAME);
+    m.kind = kindOf(md.kind);
+    if (Object.prototype.hasOwnProperty.call(COLORS, md.color)) m.color = md.color;
+    m._edited = true; prepare(m);
+  }
+  return changed;
+}
+async function loadMods(){
+  if (!DB || PREVIEW) return;
+  try {
+    const res = await fetch(`${DB}/mods.json`, { cache: "no-store" });
+    if (!res.ok) return;
+    mods = (await res.json()) || {};
+    if (applyMods()) onMsgsChanged();
+  } catch(_){}
+}
+async function saveEdit(){
+  const m = msgs.find(x => x.id === editId);
+  if (!canEdit(m)){ setEditMode(null); $("#modal").classList.add("hidden"); return; }
+  const text = $("#fText").value.trim().slice(0, CONFIG.MAX_TEXT);
+  if (!text && !m.p){ toast("Write a message ✍️"); return; }
+  const mod = { dev: DEVICE, text, to: CONFIG.MEMBERS.includes($("#fTo").value) ? $("#fTo").value : "",
+    kind: kindOf(document.querySelector('input[name="kind"]:checked').value), color: selColor, t: Date.now() };
+  const btn = $("#fSubmit"); btn.disabled = true;
+  try {
+    if (DB && !PREVIEW){
+      const res = await fetch(`${DB}/mods/${m.id}.json`, { method: "PUT", body: JSON.stringify(mod) });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+    }
+    mods[m.id] = mod; applyMods();
+    if (!DB && !PREVIEW) saveLocal();
+    onMsgsChanged();
+    $("#modal").classList.add("hidden"); setEditMode(null);
+    toast("✏️ Your letter was updated");
+  } catch (err){ console.error(err); toast("Couldn't save the change. Please try again in a moment"); }
+  finally { btn.disabled = false; }
+}
+let delAskTimer = null;
+$("#cEdit").onclick = () => openEdit(msgs.find(x => x.id === currentId));
+$("#cDel").onclick = async () => {
+  const m = msgs.find(x => x.id === currentId), b = $("#cDel");
+  if (!canEdit(m)) return;
+  if (!b.classList.contains("ask")){
+    b.classList.add("ask"); b.textContent = "🗑 Tap again to delete";
+    clearTimeout(delAskTimer); delAskTimer = setTimeout(() => { b.classList.remove("ask"); b.textContent = "🗑 Delete"; }, 3000);
+    return;
+  }
+  clearTimeout(delAskTimer); b.classList.remove("ask"); b.textContent = "🗑 Delete";
+  const mod = { dev: DEVICE, del: true, t: Date.now() };
+  try {
+    if (DB && !PREVIEW){
+      const res = await fetch(`${DB}/mods/${m.id}.json`, { method: "PUT", body: JSON.stringify(mod) });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+    }
+    mods[m.id] = mod; applyMods();
+    if (!DB && !PREVIEW) saveLocal();
+    closeAllOv(); onMsgsChanged();
+    toast("🗑 Your letter was deleted");
+  } catch (err){ console.error(err); toast("Couldn't delete. Please try again in a moment"); }
+};
 document.querySelectorAll(".overlay").forEach(ov => {
   ov.addEventListener("click", e => {
     if (!(e.target === ov || e.target.closest("[data-close]"))) return;
@@ -2536,6 +2817,7 @@ async function showCardPhoto(m){
 
 $("#form").addEventListener("submit", async e => {
   e.preventDefault();
+  if (editId){ await saveEdit(); return; }
   const text = $("#fText").value.trim().slice(0, CONFIG.MAX_TEXT);
   if (!text && !photoData){ toast("Write a message or add a photo ✍️📷"); return; }
   const fromName = ($("#fFrom").value === OTHER ? $("#fFromOther").value.trim() : $("#fFrom").value).slice(0, CONFIG.MAX_NAME);
@@ -2556,6 +2838,7 @@ $("#form").addEventListener("submit", async e => {
     kind: kindOf(document.querySelector('input[name="kind"]:checked').value),
     color: selColor,
     t: Date.now(),
+    dev: DEVICE,
   };
   if (photoData) raw.p = true;
   const btn = $("#fSubmit"); btn.disabled = true;
@@ -2582,7 +2865,7 @@ $("#form").addEventListener("submit", async e => {
     $("#modal").classList.add("hidden");
     $("#fText").value = ""; $("#fCount").textContent = "0"; clearPhoto();
     faceTo(m, 4);
-    toast(m.kind === "gift" ? "Your gift is under the tree 🎁" : m.kind === "globe" ? "Your snow globe is under the tree ❄️" : "Your ornament is on the tree ✨");
+    toast({ gift: "Your gift is under the tree 🎁", globe: "Your snow globe is under the tree ❄️", cookie: "Your cookie is on the tree 🍪", candy: "Your candy cane is on the tree 🍭" }[m.kind] || "Your ornament is on the tree ✨");
     deliver(m);
     checkWords(text + " " + raw.name);
   } catch (err){
@@ -3086,9 +3369,10 @@ function sanitize(id, m){
   return { id: String(id), name: String(CONFIG.RENAMED[m.name] || m.name || "Anonymous").slice(0, CONFIG.MAX_NAME), text,
     kind: kindOf(m.kind),
     color: Object.prototype.hasOwnProperty.call(COLORS, m.color) ? m.color : "red", t: Number(m.t) || 0, p: m.p === true,
-    to: String(CONFIG.RENAMED[m.to] || m.to || "").slice(0, CONFIG.MAX_NAME) };   // 받는이는 지우지 않고 그대로 보존
+    to: String(CONFIG.RENAMED[m.to] || m.to || "").slice(0, CONFIG.MAX_NAME),   // 받는이는 지우지 않고 그대로 보존
+    dev: typeof m.dev === "string" ? m.dev.slice(0, 24) : "" };   // 쓴 기기 (수정·삭제 권한)
 }
-function saveLocal(){ try { localStorage.setItem(LS_KEY, JSON.stringify(msgs.map(({id, name, text, kind, color, t, to, p, photo}) => ({id, name, text, kind, color, t, to, p, photo})))); } catch(_){ toast("This browser is out of space for more photos"); } }
+function saveLocal(){ try { localStorage.setItem(LS_KEY, JSON.stringify(msgs.map(({id, name, text, kind, color, t, to, p, photo, dev}) => ({id, name, text, kind, color, t, to, p, photo, dev})))); } catch(_){ toast("This browser is out of space for more photos"); } }
 function loadLocal(){
   try { msgs = JSON.parse(localStorage.getItem(LS_KEY) || "[]").map(m => { const x = sanitize(m.id, m); if (x && typeof m.photo === "string" && m.photo.startsWith("data:image/")) x.photo = m.photo; return x; }).filter(Boolean).map(prepare); }
   catch(_){ msgs = []; }
@@ -3098,6 +3382,7 @@ async function loadRemote(){
   if (remoteLoaded && document.hidden) return;   // 탭이 안 보일 땐 쉬기 (무료 한도 아끼기)
   loadEggs();
   loadReactions();
+  loadMods();
   try {
     // 처음엔 최근 400개, 그 뒤엔 마지막으로 본 것 이후의 새 메시지만 받아와요
     const q = remoteLoaded && lastKey
@@ -3133,6 +3418,7 @@ function makePreview(n){
   reactionsLoaded = true;
 }
 function onMsgsChanged(initial){
+  applyMods();
   for (const m of msgs){ m._like = rc(m, "like"); m._dis = rc(m, "dislike"); m._rep = rc(m, "report"); m._del = m._rep >= REPORT_LIMIT; if (m._del) deletedIds.add(m.id); }
   rebuildTextSrc(); updateLevel(initial); updateHud(); renderGuide(); updateMail(); renderTrash(); renderBest();
 }
