@@ -25,6 +25,8 @@
   canvas{position:fixed;inset:0;display:block;touch-action:none;cursor:grab}
   canvas.drag{cursor:grabbing}
   canvas.hover{cursor:pointer}
+  canvas.grabbable{cursor:grab}
+  canvas.grabbing{cursor:grabbing}
 
   #hud{position:fixed;top:calc(12px + env(safe-area-inset-top));left:14px;font:12px/1.55 var(--mono);
     color:rgba(200,255,215,.72);pointer-events:none;text-shadow:0 0 6px rgba(80,255,140,.35);white-space:pre}
@@ -182,6 +184,13 @@
   .hut.on .nm{text-decoration:underline;text-underline-offset:3px}
   .hut.shake{animation:shake .3s}
   .hut.hall{margin-right:8px}
+  .hut.sign{margin-right:6px}
+  .hut.sign .rf{color:#c9a06a}
+  .hut.sign .wn{color:#ffe680;text-shadow:0 0 6px rgba(255,210,80,.6)}
+  .hut.sign .bd{color:#a8794f}
+  .hut.sign .nm{color:#ffe680}
+  #bvBoard{margin-top:6px;max-height:56vh;overflow:auto}
+  #bvBoard .rk{width:26px;text-align:center}
   /* 집 업그레이드 색 */
   .hut .sm{color:rgba(200,210,225,.55)}
   .hut .sn{color:#f4f8ff}
@@ -250,7 +259,8 @@
     font:600 clamp(12px,2.6vw,17px)/1.4 var(--code);color:rgba(255,240,200,.5);text-shadow:0 0 12px rgba(255,210,120,.35)}
   .bestFloat:nth-child(2){font-size:clamp(11px,2.3vw,15px);color:rgba(235,240,255,.42)}
   .bestFloat:nth-child(3){font-size:clamp(11px,2.1vw,14px);color:rgba(220,255,230,.36)}
-  .bestFloat.grab{color:rgba(255,246,215,.85);text-shadow:0 0 16px rgba(255,220,130,.7)}
+  .bestFloat.grab, .bestFloat.hov{color:rgba(255,246,215,.88);text-shadow:0 0 16px rgba(255,220,130,.75)}
+  .bestFloat.hov .in, .bestFloat.grab .in{animation-play-state:paused}
   .bestFloat.wig .q{display:inline-block;animation:shake .3s}
   .bestFloat .in{display:inline-block;animation:bob 5s ease-in-out infinite}
   .bestFloat:nth-child(2) .in{animation-duration:6.5s}
@@ -388,7 +398,6 @@
     <div class="sheetBody">
       <h2 id="mbTitle">📬 Mailboxes</h2>
       <div id="mbPersonView">
-        <div class="board hidden" id="mbBoard"></div>
         <label class="sw"><input type="checkbox" id="hlMine"> <span id="hlLabel"></span></label>
       <ul id="mbList"></ul>
       </div>
@@ -410,6 +419,18 @@
 
 <nav id="street" aria-label="Mailboxes"><div class="inner" id="streetInner"></div></nav>
 
+
+<!-- 좋아요 BEST 게시판 (바닥 마을 맨 앞 표지판을 누르면 열려요) -->
+<div class="overlay hidden" id="bestView">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="bvTitle">
+    <div class="sheetHead"><span>// best.board</span><button data-close aria-label="Close">✕</button></div>
+    <div class="sheetBody">
+      <h2 id="bvTitle">🏆 Best letters</h2>
+      <p class="lead">The most liked letters on the tree. Tap one to read it, or 👍 it right here.</p>
+      <div class="board" id="bvBoard"></div>
+    </div>
+  </div>
+</div>
 
 <!-- 신고된 편지가 들어가는 쓰레기통 -->
 <button id="trash" type="button" aria-label="Trash can">
@@ -1739,7 +1760,9 @@ cv.addEventListener("pointermove", e => {
     lastX = e.clientX; lastT = now;
     moved = Math.max(moved, Math.hypot(e.clientX - downX, e.clientY - downY));
   } else {
-    cv.classList.toggle("hover", !!(hitTest(e.clientX, e.clientY) || near(starHit, e) || near(moonHit, e) || near(catHit, e) || near(wishHit, e) || floatAt(e.clientX, e.clientY)));
+    const fh = e.pointerType === "mouse" ? floatAt(e.clientX, e.clientY) : null;
+    setHoverFloat(fh);
+    cv.classList.toggle("hover", !fh && !!(hitTest(e.clientX, e.clientY) || near(starHit, e) || near(moonHit, e) || near(catHit, e) || near(wishHit, e)));
   }
 });
 const near = (h, e) => h && Math.hypot(h.x - e.clientX, h.y - e.clientY) < h.r;
@@ -1783,6 +1806,7 @@ function endDrag(e){
   }
 }
 cv.addEventListener("pointerup", endDrag);
+cv.addEventListener("pointerleave", () => { if (!floatDrag) setHoverFloat(null); });
 cv.addEventListener("pointercancel", () => { dragging = false; cv.classList.remove("drag"); });
 cv.addEventListener("wheel", e => {
   e.preventDefault(); wake();
@@ -1831,11 +1855,12 @@ $("#btnFill").onclick = () => { FILL = { symbol: "text", text: "binary", binary:
 
 /* ---------------- 뒤로가기: 열린 화면을 차례로 쌓아요 ----------------
    메일함 → 편지 순서로 열면 "← Back"(또는 휴대폰 뒤로가기)으로 메일함으로 돌아가요. */
-const OV_IDS = ["mailbox", "card", "trashView"];
+const OV_IDS = ["mailbox", "card", "trashView", "bestView"];
 const ovStack = [];
 try { if (history.state && history.state.ov) history.replaceState(null, ""); } catch(_){}
 function showOv(id){
   if (id === "mailbox") renderMailbox();
+  if (id === "bestView") renderBoard();
   $("#" + id).classList.remove("hidden");
   updateBackBtn();
 }
@@ -1858,9 +1883,10 @@ function backOv(){ if (ovStack.length) history.back(); }
 function closeAllOv(){ if (ovStack.length) history.go(-ovStack.length); }
 function updateBackBtn(){
   const b = $("#cBack"); if (!b) return;
-  const show = ovStack[ovStack.length - 1] === "card" && ovStack[ovStack.length - 2] === "mailbox";
+  const under = ovStack[ovStack.length - 2];
+  const show = ovStack[ovStack.length - 1] === "card" && (under === "mailbox" || under === "bestView");
   b.classList.toggle("hidden", !show);
-  if (show) b.textContent = mbView === EVERYONE ? "← Everyone" : `← ${mbView}`;
+  if (show) b.textContent = under === "bestView" ? "← Best" : mbView === EVERYONE ? "← Everyone" : `← ${mbView}`;
 }
 
 /* ---------------- 편지함: 멤버별 메일함 ---------------- */
@@ -1939,6 +1965,18 @@ function renderStreet(){
   const box = $("#streetInner"); if (!box) return;
   const r = readSet();
   box.innerHTML = "";
+  {
+    const topLikes = msgs.reduce((mx, m) => (!m._del && m._like > mx ? m._like : mx), 0);
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "hut sign" + (topLikes ? " full" : "");
+    b.title = "Best letters board";
+    const pre = document.createElement("pre");
+    for (const [cls, txt] of boardArt(topLikes)){ const sp = document.createElement("span"); sp.className = cls; sp.textContent = txt; pre.appendChild(sp); }
+    const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = "🏆 Best";
+    b.appendChild(pre); b.appendChild(nm);
+    b.onclick = () => pushOv("bestView");
+    box.appendChild(b);
+  }
   for (const name of [EVERYONE, ...CONFIG.MEMBERS]){
     const list = lettersFor(name).filter(m => !m._del), unread = list.filter(m => !r.has(m.id)).length;
     const b = document.createElement("button");
@@ -1989,8 +2027,6 @@ function renderMailbox(){
   $("#mbTitle").textContent = all ? "🎄 Letters for everyone" : `📬 ${mbView}'s mailbox`;
   $("#hlLabel").textContent = all ? "✨ Make only the letters for everyone glow on the tree" : `✨ Make only ${mbView}'s ornaments & gifts glow on the tree`;
   $("#hlMine").checked = hlName === mbView;
-  $("#mbBoard").classList.toggle("hidden", !all);
-  if (all) renderBoard();
   const ul = $("#mbList"); ul.innerHTML = "";
   const list = lettersFor(mbView);
   if (!list.length){ ul.innerHTML = '<li class="empty">No letters yet… they might be on their way 🎄</li>'; return; }
@@ -2268,6 +2304,7 @@ function afterReactions(){
   if (!first) for (const m of msgs) if (m._del && !deletedIds.has(m.id)) flyToTrash(m);
   deletedIds = now;
   renderTrash(); renderBest(); updateMail();
+  if (!$("#bestView").classList.contains("hidden")) renderBoard();
   const cur = msgs.find(x => x.id === currentId);
   if (cur && !$("#card").classList.contains("hidden")) renderReact(cur);
 }
@@ -2350,6 +2387,7 @@ function refreshReactViews(m){
   const cur = msgs.find(x => x.id === currentId);
   if (cur && !$("#card").classList.contains("hidden")) renderReact(cur);
   if (!$("#mailbox").classList.contains("hidden")) renderMailbox();
+  if (!$("#bestView").classList.contains("hidden")) renderBoard();
 }
 $("#cBack").onclick = backOv;
 $("#rLike").onclick = () => react("like");
@@ -2459,7 +2497,8 @@ function stepFloats(dt){
     const base = innerWidth / FLOAT_SECS[f.i];
     if (f.x === null){ f.x = Math.random() * innerWidth * 0.8; f.vx = base; }
     f.w = f.el.offsetWidth || f.w;
-    if (!f.drag){
+    if (f.hover && !f.drag){ f.vx = 0; }
+    else if (!f.drag){
       f.vx += (base - f.vx) * Math.min(1, dt * 0.9);
       f.x += f.vx * dt;
       if (f.x > innerWidth + 20) f.x = -f.w;
@@ -2470,19 +2509,34 @@ function stepFloats(dt){
   }
 }
 function floatAt(x, y){
+  const PAD = 16;   // 손가락으로도 잡기 쉽게 넉넉하게
   for (let i = floats.length - 1; i >= 0; i--){
     const f = floats[i]; if (f.el.classList.contains("hidden")) continue;
     const r = f.el.getBoundingClientRect();
-    if (x >= r.left - 6 && x <= r.right + 6 && y >= r.top - 6 && y <= r.bottom + 6) return f;
+    let top = r.top, right = r.right;
+    const sa = slotArt[i];
+    if (sa && sa.art){   // 위에 떠 있는 사진 아스키 그림도 잡을 수 있게
+      top = Math.min(top, r.top - (sa.art.h + 1) * ch);
+      right = Math.max(right, r.left + sa.art.w * cw);
+    }
+    if (x >= r.left - PAD && x <= right + PAD && y >= top - PAD && y <= r.bottom + PAD) return f;
   }
   return null;
+}
+let hoverFloat = null;
+function setHoverFloat(f){
+  if (hoverFloat === f) return;
+  if (hoverFloat){ hoverFloat.hover = false; hoverFloat.el.classList.remove("hov"); }
+  hoverFloat = f;
+  if (f){ f.hover = true; f.el.classList.add("hov"); }
+  cv.classList.toggle("grabbable", !!f);
 }
 let floatDrag = null;
 function floatDown(e){
   const f = floatAt(e.clientX, e.clientY); if (!f) return false;
   const y = Math.max(50, Math.min(innerHeight - 220, f.yf * innerHeight));
   floatDrag = { f, offX: e.clientX - f.x, offY: e.clientY - y, sx: e.clientX, sy: e.clientY, lx: e.clientX, lt: performance.now(), vx: 0, moved: 0 };
-  f.drag = true; f.el.classList.add("grab");
+  f.drag = true; f.el.classList.add("grab"); cv.classList.add("grabbing");
   cv.setPointerCapture(e.pointerId);
   return true;
 }
@@ -2496,7 +2550,7 @@ function floatMove(e){
 }
 function floatUp(){
   const d = floatDrag, f = d.f; floatDrag = null;
-  f.drag = false; f.el.classList.remove("grab");
+  f.drag = false; f.el.classList.remove("grab"); cv.classList.remove("grabbing");
   if (d.moved >= 6){ f.vx = Math.max(-2500, Math.min(2500, d.vx)); return; }   // 던지기
   // 살짝 누르기: 흔들리고, 3초 안에 5번이면 하트로 펑!
   f.el.classList.remove("wig"); void f.el.offsetWidth; f.el.classList.add("wig");
@@ -2512,26 +2566,35 @@ function floatUp(){
   }
 }
 
-/* 마을회관 보드: 좋아요 BEST */
+/* 좋아요 BEST 게시판 (TOP 10) */
+const BOARD_SIZE = 10;
 function renderBoard(){
-  const box = $("#mbBoard"); box.innerHTML = "";
-  const section = (title, key) => {
-    const h = document.createElement("h4"); h.textContent = title; box.appendChild(h);
-    const top = msgs.filter(m => m[key] > 0).sort((a, b) => b[key] - a[key] || b.t - a.t).slice(0, 3);
-    const ul = document.createElement("ul");
-    if (!top.length){ const li = document.createElement("li"); li.className = "none"; li.textContent = "Nothing here yet"; ul.appendChild(li); }
-    top.forEach((m, i) => {
-      const li = document.createElement("li"); if (m._del) li.className = "removed";
-      li.innerHTML = '<button type="button" class="main"><span class="rk"></span><span class="pv"></span></button>';
-      li.querySelector(".rk").textContent = i + 1;
-      li.querySelector(".pv").textContent = m._del ? RM_TEXT : `${label(m)}  — ${m.name || "Anonymous"} → ${m.to || "Everyone"}`;
-      li.querySelector("button").onclick = () => openCard(m);
-      li.appendChild(makeRx(m));
-      ul.appendChild(li);
-    });
-    box.appendChild(ul);
-  };
-  section("🏆 Most liked", "_like");
+  const box = $("#bvBoard"); if (!box) return;
+  box.innerHTML = "";
+  const top = msgs.filter(m => !m._del && m._like > 0).sort((a, b) => b._like - a._like || b.t - a.t).slice(0, BOARD_SIZE);
+  const ul = document.createElement("ul");
+  if (!top.length){ const li = document.createElement("li"); li.className = "none"; li.textContent = "No likes yet — be the first to 👍 a letter!"; ul.appendChild(li); }
+  top.forEach((m, i) => {
+    const li = document.createElement("li");
+    li.innerHTML = '<button type="button" class="main"><span class="rk"></span><span class="pv"></span></button>';
+    li.querySelector(".rk").textContent = i < 3 ? ["🥇", "🥈", "🥉"][i] : i + 1;
+    li.querySelector(".pv").textContent = `${label(m)}  — ${m.name || "Anonymous"} → ${m.to || "Everyone"}`;
+    li.querySelector("button").onclick = () => openCard(m);
+    li.appendChild(makeRx(m));
+    ul.appendChild(li);
+  });
+  box.appendChild(ul);
+}
+function boardArt(topLikes){
+  const n = String(Math.min(topLikes, 999)).padStart(3, " ");
+  return [
+    ["st", " ._________.\n"],
+    ["rf", " | "], ["wn", "B E S T"], ["rf", " |\n"],
+    ["rf", " | "], ["li", "*"], ["bd", n], ["li", " * "], ["rf", "|\n"],
+    ["rf", " |_________|\n"],
+    ["bd", "     | |    \n"],
+    ["bd", "  ___|_|___ "],
+  ];
 }
 
 /* ---------------- 쓰레기통 ---------------- */
