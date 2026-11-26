@@ -304,7 +304,7 @@
     <form class="sheetBody" id="form" autocomplete="off">
       <h2 id="mTitle">Hang a message on the tree 🎄</h2>
       <label for="fText">Message</label>
-      <textarea id="fText" rows="3" maxlength="80" placeholder="Merry Christmas! Thanks for this year :)" required></textarea>
+      <textarea id="fText" rows="3" maxlength="80" placeholder="Merry Christmas! Thanks for this year :) (or just send a photo)"></textarea>
       <div class="count"><span id="fCount">0</span>/80</div>
       <label>Photo (optional)</label>
       <div class="photoRow">
@@ -348,7 +348,7 @@
         <div class="trRow"><select id="trLang" aria-label="Translate to"></select><button id="trBtn">🌐 Translate</button></div>
         <div class="trOut hidden" id="trOut"></div>
       </div>
-      <div class="row"><button data-close>Close</button><button class="p" id="cNext">Open another</button></div>
+      <div class="row"><button type="button" id="cBack" class="hidden">← Back</button><button data-close>Close</button><button class="p" id="cNext">Open another</button></div>
     </div>
   </div>
 </div>
@@ -425,7 +425,7 @@ const CONFIG = {
   STAR_TEXT: "AIRIS LAB",   // 레벨 10에서 트리 꼭대기 별이 이 글자로 바뀌어요 (영문 대문자/공백)
   SPIN: 0.35,
   // 연구실 멤버 (편지 보내는이/받는이 목록)
-  MEMBERS: ["강은", "상은", "Vika", "Akira", "부승", "종호", "정빈", "경택", "Rai", "성준", "기락", "교수님", "이든", "혜림"],
+  MEMBERS: ["강은", "상은", "Vika", "Akira", "부승", "종호", "정빈", "경택", "Rai", "성준", "기락", "교수님", "이든", "혜림", "린지"],
   // 예전 이름 → 새 이름 (이름을 바꿔도 이미 받은 편지가 새 메일함으로 들어가요)
   RENAMED: { "교수": "교수님" },
   MAX_TEXT: 80,
@@ -457,6 +457,11 @@ const LEVELS = [
   { icon:"🛸", text:"A spaceship passes by… aliens love Christmas too?" },
   { icon:"👻", text:"A ghost in a Santa hat stops by to say hi" },
   { icon:"⭐", text:`The ${CONFIG.STAR_TEXT} star! Golden garland & fireworks` },
+  { icon:"🚂", text:"A toy train chugs past the tree" },
+  { icon:"🏮", text:"Sky lanterns float up into the night" },
+  { icon:"🐋", text:"A whale swims across the starry sky" },
+  { icon:"❄️", text:"Giant snowflakes start to fall" },
+  { icon:"🌌", text:"The stars spell out 2026 — the tree is complete!" },
 ];
 const MAX_LEVEL = LEVELS.length - 1;
 
@@ -531,6 +536,22 @@ const CAT_WALK = [
 ];
 const CAT_SLEEP = ["             ", "   /\\_/\\___  ", "  ( -.- )   )~", "   (_______)  "];
 const UFO = ["      _.---._      ", "    .'  o o  '.    ", "  (_____________)  ", "    *  *  *  *     "];
+const TRAIN = [
+  "                    _  o O ",
+  "  ___    ___    ___| |__   ",
+  " |[_]|--|[_]|--|  [] __|>  ",
+  " '-o-'  '-o-'  'o-o----o'  ",
+];
+const WHALE = [
+  "          .  .      ",
+  "           \\|/      ",
+  "    .-~~~~~~-.    _ ",
+  "  .'  o       '._/ )",
+  " (    ~~         _< ",
+  "  '-.______.-'\\_)   ",
+];
+const FLAKE = [" \\|/ ", " -*- ", " /|\\ "];
+const COOKIE = ["   .-~~-.   ", "  / o  o \\  ", " |  \\__/  | ", "  \\ .  . /  ", "   '-..-'   "];
 const GHOST = [
   ["    /\\     ", "   /__\\*   ", "  .-''-.   ", " / o  o \\  ", "|   ()   |/", "|        | ", " \\/\\/\\/\\/  "],
   ["    /\\     ", "   /__\\*   ", "  .-''-.   ", " / o  o \\  ", "|   ()   |_", "|        |\\", " \\/\\/\\/\\/  "],
@@ -581,6 +602,7 @@ function buildLogo(text){
   return rowsOut.map(r => r.replace(/\./g, " "));
 }
 const LOGO = buildLogo(CONFIG.STAR_TEXT);
+const CONSTELLATION = buildLogo("2026");
 
 /* ---------------- 상태 ---------------- */
 let FILL = "symbol", TEXT_SRC = "MERRYCHRISTMAS";
@@ -728,6 +750,11 @@ function stepParticles(dt){
       continue;
     }
     if (p.life > p.max){ parts.splice(i, 1); continue; }
+    if (p.lantern){
+      p.x += (p.vx + Math.sin(t * 0.9 + p.ph) * 0.6) * dt; p.y += p.vy * dt;
+      if (p.y < 1) p.life = p.max + 1;
+      continue;
+    }
     if (p.fly){
       if (p.life < 0) continue;
       const k = Math.min(1, p.life / p.max), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
@@ -752,6 +779,11 @@ function drawParticles(){
     if (p.rocket){
       put(p.x | 0, p.y | 0, -60, "|", p.pal[1], 0, 0);
       put(p.x | 0, (p.y | 0) + 1, -60, ".", "#ffb36b", 0, 0);
+    } else if (p.lantern){
+      const fade = Math.max(0, Math.min(1, p.y / (rows * 0.25)));
+      const glowOn = Math.sin(t * 5 + p.ph) > -0.3;
+      put(p.x | 0, (p.y | 0) - 1, -50, "^", `rgba(255,170,80,${(0.75 * fade).toFixed(2)})`, 0, 0);
+      put(p.x | 0, p.y | 0, -50, "#", glowOn ? `rgba(255,200,90,${fade.toFixed(2)})` : `rgba(255,140,60,${(0.8 * fade).toFixed(2)})`, 0, fade > 0.6 ? 1 : 0);
     } else if (p.fly){
       if (p.life < 0) continue;
       const k = p.life / p.max;
@@ -786,6 +818,60 @@ function summon(kind){
   if (kind === "ufo" && !ufo.active){ ufo.active = true; ufo.x = cols + 2; }
   if (kind === "ghost" && ghost.phase === "off"){ ghost.phase = "in"; ghost.x = cols + 2; ghost.y = Math.round(rows * 0.36); }
   if (kind === "fireworks"){ showRockets += 8; nextShowRocket = t + 0.3; }
+}
+
+const train = { x: 9999, nextAt: 3 };
+const whale = { active: false, x: 0, nextAt: 6 };
+const flakes = [];
+let nextLantern = 0;
+const cookie = { phase: "off", y: 0, until: 0 };
+function stepExtras(dt){
+  // 레벨 11: 장난감 기차가 바닥을 지나가요
+  if (LEVEL >= 11){
+    if (train.x > cols + 2){ if (t > train.nextAt) train.x = -TRAIN[0].length; }
+    else { train.x += dt * 9; if (train.x > cols + 2) train.nextAt = t + rand(8, 16); }
+  }
+  // 레벨 12: 풍등이 하늘로 올라가요
+  if (LEVEL >= 12 && t > nextLantern){
+    nextLantern = t + rand(1.6, 3.2);
+    parts.push({ lantern: true, x: rand(0.05, 0.95) * cols, y: groundRow - 1, vx: rand(-0.4, 0.4), vy: -rand(1.6, 2.6), life: 0, max: 30, ph: rand(0, TAU) });
+  }
+  // 레벨 13: 고래가 밤하늘을 헤엄쳐요
+  if (LEVEL >= 13){
+    if (!whale.active && t > whale.nextAt){ whale.active = true; whale.x = cols + 2; }
+    if (whale.active){ whale.x -= dt * cols / 26; if (whale.x < -24){ whale.active = false; whale.nextAt = t + rand(30, 50); } }
+  }
+  // 레벨 14: 커다란 눈송이
+  if (LEVEL >= 14 && flakes.length < 7 && Math.random() < dt * 0.8) flakes.push({ x: rand(0, cols), y: -3, v: rand(1.2, 2.4), sw: rand(0, TAU) });
+  for (let i = flakes.length - 1; i >= 0; i--){
+    const f = flakes[i]; f.y += f.v * dt; f.x += Math.sin(t + f.sw) * dt * 1.5;
+    if (f.y > groundRow) flakes.splice(i, 1);
+  }
+  // 이스터에그: 쿠키 친구가 트리 뒤에서 빼꼼
+  if (cookie.phase === "up"){ cookie.y = Math.min(1, cookie.y + dt * 2.2); if (cookie.y >= 1 && t > cookie.until) cookie.phase = "down"; }
+  else if (cookie.phase === "down"){ cookie.y -= dt * 2; if (cookie.y <= 0){ cookie.y = 0; cookie.phase = "off"; } }
+}
+const trainColor = (chh, r, c) => r === 0 ? "rgba(210,215,225,.6)" : c >= 15 ? "#ff5a6e" : c >= 8 ? "#4fd18b" : "#ffd34d";
+const whaleColor = (chh, r) => r <= 1 ? "#bfe6ff" : chh === "o" ? "#ffffff" : "#5fa8ff";
+const cookieColor = (chh) => chh === "o" ? "#3a2414" : (chh === "~" || chh === "_") ? "#fff4e6" : "#d08a4e";
+function drawExtras(){
+  // 레벨 15: 별자리로 2026
+  if (LEVEL >= 15){
+    const art = CONSTELLATION, c0 = Math.max(2, Math.round(cols * 0.06)), r0 = Math.round(rows * 0.36);
+    for (let r = 0; r < art.length; r++) for (let c = 0; c < art[r].length; c++){
+      if (art[r][c] === " ") continue;
+      const tw = Math.sin(t * 2 + r * 1.3 + c * 0.7);
+      put(c0 + c * 2, r0 + r, -84, tw > 0.3 ? "*" : "+", tw > 0.3 ? "#fff6d0" : "rgba(255,240,190,.75)", 0, tw > 0.3 ? 1 : 0);
+    }
+  }
+  for (const f of flakes) sprite(FLAKE, Math.round(f.x), Math.round(f.y), -40, () => "rgba(235,245,255,.85)", 0);
+  if (whale.active) sprite(WHALE, Math.round(whale.x), Math.round(rows * 0.2 + Math.sin(t * 0.8) * 1.5), -70, whaleColor, 0);
+  if (LEVEL >= 11 && train.x <= cols + 2) sprite(TRAIN, Math.round(train.x), groundRow - 3, 0.86, trainColor, 0);
+  if (cookie.phase !== "off"){
+    const h = Math.round(cookie.y * COOKIE.length), c0 = Math.round(cx / cw) - 6, base = groundRow - 1;
+    sprite(COOKIE.slice(0, h), c0, base - h + 1, 0.995, cookieColor, 1);
+    if (cookie.phase === "up" && cookie.y >= 1) bubbles.push({ x: cx, y: (base - h) * ch, text: "Merry Christmas! 🍪", until: t + 0.05 });
+  }
 }
 
 function stepActors(dt){
@@ -932,6 +1018,7 @@ function frame(now){
 
   ca = Math.cos(angle); sa = Math.sin(angle);
   stepActors(dt);
+  stepExtras(dt);
   stepParticles(dt);
 
   depth.fill(-1e9); chars.fill(undefined); owner.fill(0); glow.fill(0);
@@ -966,6 +1053,7 @@ function frame(now){
     moonHit = { x: (mc + 5) * cw, y: (mr + 3.5) * ch, r: Math.max(30, 6 * cw) };
   }
   drawParticles();
+  drawExtras();
   if (santa.active) sprite(SANTA, Math.round(santa.x), Math.round(rows * 0.13 + Math.sin(t * 2.2) * 1.2), -55, santaColor, 0);
   if (ufo.active){
     const ur = Math.round(rows * 0.17 + Math.sin(t * 1.5) * 1.5), uc = Math.round(ufo.x);
@@ -974,8 +1062,8 @@ function frame(now){
     if (mid) for (let i = 0; i < 6; i++) for (let j = -i; j <= i; j++) if (Math.random() < 0.5) put(uc + 9 + j, ur + 4 + i, -59, ":", "rgba(150,255,210,.5)", 0, 0);
   }
   if (duck.active) drawDuck();
-  if (LEVEL >= 3){
-    for (let c = 0; c < cols; c++) put(c, groundRow, -30, groundCh[c], "rgba(230,240,255,.45)", 0, 0);
+  if (LEVEL >= 3 || LEVEL >= 11){
+    for (let c = 0; c < cols; c++) put(c, groundRow, -30, groundCh[c], LEVEL >= 14 ? "rgba(245,250,255,.85)" : "rgba(230,240,255,.45)", 0, 0);
     const hc = Math.max(0, Math.round((cx - Math.min(scale * 0.62, W * 0.46)) / cw) - 6);
     const art = HOUSE.slice();
     art[0] = "     " + ["( )  ", " ( ) ", "  ( )"][(t * 1.5 | 0) % 3] + "       ";
@@ -998,7 +1086,7 @@ function frame(now){
     if (p.trunk){ col = TRUNK[(b * 7.99) | 0]; if (FILL === "symbol") chr = p.n < 0.5 ? "|" : "#"; }
     else if (p.light){
       const on = disco ? Math.random() < 0.6 : !sleeping && Math.sin(t * 2.6 + p.ph) > -0.1;
-      col = on ? (disco ? pick(LIGHT_ON) : LIGHT_ON[p.lc]) : LIGHT_OFF[p.lc];
+      col = on ? (disco ? pick(LIGHT_ON) : LEVEL >= 15 ? RAINBOW[((p.lc * 4 + p.y * 40 + t * 10) | 0) % 24][7] : LIGHT_ON[p.lc]) : LIGHT_OFF[p.lc];
       if (FILL === "symbol") chr = on ? "o" : ".";
     } else if (rainbow || disco){
       col = RAINBOW[((p.y * 30 + t * (disco ? 40 : 14) + p.n * 3) | 0) % 24][(b * 7.99) | 0];
@@ -1183,7 +1271,7 @@ function celebrate(m){
     m > MAX_LEVEL ? `🎉 ${n} decorations! Celebration fireworks` : `${info.icon} ${info.text}`);
   proj(0, 0, 0);
   burst(PX / cw, PY / ch, 70, FW_COLORS[1], rows * 0.14);
-  const first = { 2: () => nextMeteor = t + 0.8, 4: () => summon("cat"), 5: () => summon("santa"), 7: () => summon("duck"), 8: () => summon("ufo"), 9: () => summon("ghost") };
+  const first = { 2: () => nextMeteor = t + 0.8, 4: () => summon("cat"), 5: () => summon("santa"), 7: () => summon("duck"), 8: () => summon("ufo"), 9: () => summon("ghost"), 11: () => { train.x = -TRAIN[0].length; }, 12: () => { nextLantern = t; }, 13: () => { whale.active = true; whale.x = cols + 2; } };
   if (first[m]) first[m]();
   if (m >= 10){ showRockets += m > MAX_LEVEL ? 14 : 10; nextShowRocket = t + 0.6; setTimeout(() => launchRocket("heart"), 900); setTimeout(() => launchRocket("star"), 1700); }
   Music.fanfare();
@@ -1202,13 +1290,14 @@ const EGGS = [
   ["mail",   "📮", "Mail Storm",     "Knock on a mailbox house 5 times, fast."],
   ["wish",   "🌠", "Wishing Star",   "Find the one special star in the sky and tap it."],
   ["trash",  "🗑", "Trash Smasher",  "Keep tapping the trash can until it breaks."],
+  ["cookie", "🍪", "Cookie Friend",  "Tap the tree trunk — someone is hiding behind it."],
 ];
 const EGG_TOTAL = EGGS.length;
 const EGG_HINTS = {
   spin: "Spin the tree round and round?", star: "Poke the star a few times?", moon: "Touch the moon?",
   cat: "Bother a napping cat?", sleep: "Leave the tree alone for a while?", konami: "↑ ↑ ↓ ↓ ← → ← → B A?",
   word: "A magic word in your message?", xmas: "Come back on Christmas?",
-  mail: "Knock on a mailbox again and again?", wish: "One star in the sky looks a little different?", trash: "Tap the trash can again and again?",
+  mail: "Knock on a mailbox again and again?", wish: "One star in the sky looks a little different?", trash: "Tap the trash can again and again?", cookie: "Someone is hiding behind the tree trunk?",
 };
 let eggListOpen = false;
 // 이스터에그는 모두가 공유해요: 누군가 찾으면 Firebase /eggs 에 기록되고 모두의 카운트가 올라가요
@@ -1555,6 +1644,13 @@ function endDrag(e){
   dragging = false; cv.classList.remove("drag");
   if (Math.abs(vel) > 0.3) spinDir = Math.sign(vel);
   if (moved >= 8) return;
+  // 이스터에그: 트리 밑동(줄기)을 누르면 쿠키 친구가 빼꼼 (선물보다 먼저, 좁은 범위로 확인)
+  proj(0, TRUNK_Y0 + 0.05, 0);
+  if (cookie.phase === "off" && Math.abs(PX - e.clientX) < Math.max(12, cw * 2) && Math.abs(PY - e.clientY) < Math.max(14, ch * 1.6)){
+    cookie.phase = "up"; cookie.until = t + 3.2;
+    egg("cookie", "🍪 A cookie friend peeked out from behind the tree!");
+    return;
+  }
   const h = hitTest(e.clientX, e.clientY);
   if (h){ openCard(msgs[h.k]); return; }
   if (near(starHit, e)){
@@ -1608,13 +1704,14 @@ function openCard(m){
   $("#cIcon").style.filter = `drop-shadow(0 0 10px ${m.col})`;
   $("#cHead").textContent = m.kind === "gift" ? "// gift.open()" : "// ornament.read()";
   $("#cMsg").textContent = m.text;
+  $("#cMsg").classList.toggle("hidden", !m.text);
   showCardPhoto(m);
   $("#cFrom").textContent = `From. ${m.name || "Anonymous"}  →  To. ${m.to || "Everyone 🎄"}`;
   $("#trOut").classList.add("hidden"); $("#trOut").textContent = "";
   markRead(m.id);
   $("#cDate").textContent = m.t ? new Date(m.t).toLocaleString("en-US", { month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
   renderReact(m);
-  $("#card").classList.remove("hidden");
+  pushOv("card");
 }
 function openRandom(){
   if (!msgs.length){ toast("No messages yet. Be the first to hang one! 🎄"); return; }
@@ -1626,6 +1723,40 @@ function openRandom(){
 $("#btnRandom").onclick = openRandom;
 $("#cNext").onclick = openRandom;
 $("#btnFill").onclick = () => { FILL = { symbol: "text", text: "binary", binary: "symbol" }[FILL]; $("#btnFill").textContent = "FILL: " + FILL; };
+
+/* ---------------- 뒤로가기: 열린 화면을 차례로 쌓아요 ----------------
+   메일함 → 편지 순서로 열면 "← Back"(또는 휴대폰 뒤로가기)으로 메일함으로 돌아가요. */
+const OV_IDS = ["mailbox", "card", "trashView"];
+const ovStack = [];
+try { if (history.state && history.state.ov) history.replaceState(null, ""); } catch(_){}
+function showOv(id){
+  if (id === "mailbox") renderMailbox();
+  $("#" + id).classList.remove("hidden");
+  updateBackBtn();
+}
+function hideOv(id){ $("#" + id).classList.add("hidden"); }
+function pushOv(id){
+  const top = ovStack[ovStack.length - 1];
+  if (top === id){ showOv(id); return; }
+  if (top) hideOv(top);
+  ovStack.push(id);
+  try { history.pushState({ ov: ovStack.length }, ""); } catch(_){}
+  showOv(id);
+}
+addEventListener("popstate", e => {
+  const depth = (e.state && e.state.ov) || 0;
+  while (ovStack.length > depth) hideOv(ovStack.pop());
+  const top = ovStack[ovStack.length - 1];
+  if (top) showOv(top);
+});
+function backOv(){ if (ovStack.length) history.back(); }
+function closeAllOv(){ if (ovStack.length) history.go(-ovStack.length); }
+function updateBackBtn(){
+  const b = $("#cBack"); if (!b) return;
+  const show = ovStack[ovStack.length - 1] === "card" && ovStack[ovStack.length - 2] === "mailbox";
+  b.classList.toggle("hidden", !show);
+  if (show) b.textContent = mbView === EVERYONE ? "← Everyone" : `← ${mbView}`;
+}
 
 /* ---------------- 편지함: 멤버별 메일함 ---------------- */
 let hlName = "";          // 트리에서 빛나게 볼 사람 (메일함에서 선택)
@@ -1708,8 +1839,8 @@ function knockHut(el, name){
   knock.timer = setTimeout(() => openMailbox(name), 400);   // 한 번만 두드리면 열려요
 }
 function openMailbox(name){
-  mbView = name; renderMailbox();
-  $("#mailbox").classList.remove("hidden");
+  mbView = name;
+  pushOv("mailbox");
 }
 function fillMemberSelect(sel, first, value){
   sel.innerHTML = "";
@@ -1737,10 +1868,10 @@ function renderMailbox(){
     const top = li.querySelector(".top");
     if (!m._del && !r.has(m.id)){ const n = document.createElement("span"); n.className = "new"; n.textContent = "NEW · "; top.appendChild(n); }
     top.appendChild(document.createTextNode("From. " + (m.name || "Anonymous") + (all && m.to ? `  →  To. ${m.to}` : "") + (m.p && !m._del ? "  📷" : "") ));
-    li.querySelector(".pv").textContent = m._del ? RM_TEXT : m.text;
+    li.querySelector(".pv").textContent = m._del ? RM_TEXT : label(m);
     if (m._del) li.querySelector(".ic").textContent = "🗑";
     li.querySelector(".dt").textContent = m.t ? new Date(m.t).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
-    li.querySelector("button").onclick = () => { $("#mailbox").classList.add("hidden"); document.body.classList.remove("mbopen"); openCard(m); };
+    li.querySelector("button").onclick = () => openCard(m);
     li.appendChild(makeRx(m));
     ul.appendChild(li);
   }
@@ -1832,9 +1963,17 @@ $("#fFrom").onchange = e => { try { localStorage.setItem("mytree.from", e.target
 fillMemberSelect($("#fTo"), ["", "🎄 Everyone"], "");
 $("#btnAdd").onclick = () => { $("#modal").classList.remove("hidden"); setTimeout(() => $("#fText").focus(), 50); };
 document.querySelectorAll(".overlay").forEach(ov => {
-  ov.addEventListener("click", e => { if (e.target === ov || e.target.closest("[data-close]")){ ov.classList.add("hidden"); if (ov.id === "mailbox") document.body.classList.remove("mbopen"); } });
+  ov.addEventListener("click", e => {
+    if (!(e.target === ov || e.target.closest("[data-close]"))) return;
+    if (OV_IDS.includes(ov.id) && ovStack.includes(ov.id)) closeAllOv();   // 쌓인 화면은 한 번에 닫기
+    else ov.classList.add("hidden");
+  });
 });
-document.addEventListener("keydown", e => { if (e.key === "Escape"){ document.querySelectorAll(".overlay").forEach(o => o.classList.add("hidden")); document.body.classList.remove("mbopen"); } });
+document.addEventListener("keydown", e => {
+  if (e.key !== "Escape") return;
+  if (ovStack.length) closeAllOv();
+  document.querySelectorAll(".overlay").forEach(o => { if (!OV_IDS.includes(o.id)) o.classList.add("hidden"); });
+});
 
 /* ---------------- 사진 첨부 ----------------
    사진은 브라우저에서 작은 JPEG로 압축해서 Realtime Database의 /photos/{편지id} 에 저장해요.
@@ -1905,7 +2044,7 @@ async function showCardPhoto(m){
 $("#form").addEventListener("submit", async e => {
   e.preventDefault();
   const text = $("#fText").value.trim().slice(0, CONFIG.MAX_TEXT);
-  if (!text){ toast("Write a message first ✍️"); return; }
+  if (!text && !photoData){ toast("Write a message or add a photo ✍️📷"); return; }
   if (!PREVIEW){
     const wait = CONFIG.COOLDOWN_SEC - (Date.now() - +(localStorage.getItem("mytree.lastPost") || 0)) / 1000;
     if (wait > 0){ toast(`You can hang another one in ${Math.ceil(wait)}s`); return; }
@@ -1953,8 +2092,8 @@ $("#form").addEventListener("submit", async e => {
 /* ---------------- 좋아요 · 싫어요 · 신고 ----------------
    기기마다 고유번호(DEVICE)를 만들어 기억하고, Firebase /reactions/{편지}/{like|dislike|report}/{기기} 에 1을 기록해요.
    규칙이 "이미 있으면 못 씀"이라 기기당 한 번씩만 누를 수 있고, 좋아요와 싫어요는 둘 중 하나만 돼요.
-   신고가 REPORT_LIMIT(3)개 이상이면 "삭제된 게시물입니다."로 바뀌고 쓰레기통으로 가요. */
-const REPORT_LIMIT = 3;
+   신고가 REPORT_LIMIT(2)개 이상이면 "삭제된 게시물입니다."로 바뀌고 쓰레기통으로 가요. */
+const REPORT_LIMIT = 2;
 const DEVICE = (() => {
   let d = ""; try { d = localStorage.getItem("mytree.device") || ""; } catch(_){}
   if (!/^[a-z0-9]{8,24}$/.test(d)){
@@ -1969,6 +2108,7 @@ let deletedIds = new Set();
 const rc = (m, type) => Object.keys(((reactions[m.id] || {})[type]) || {}).length;
 const iDid = (m, type) => !!(((reactions[m.id] || {})[type] || {})[DEVICE]);
 const RM_TEXT = "삭제된 게시물입니다.";
+const label = m => m.text || "📷 (photo)";   // 사진만 있는 편지의 미리보기 문구
 
 async function loadReactions(){
   if (PREVIEW) return;
@@ -2000,7 +2140,8 @@ function afterReactions(){
 function renderReact(m){
   const del = !!m._del, myRep = iDid(m, "report");
   $("#card .sheet").classList.toggle("removed", del);
-  $(".tr").classList.toggle("hidden", del);
+  $(".tr").classList.toggle("hidden", del || !m.text);
+  $("#cMsg").classList.toggle("hidden", !del && !m.text);
   // 삭제된 편지는 내가 신고했던 경우에만 "신고 취소" 버튼이 남아요
   $("#cReact").classList.toggle("hidden", del && !myRep);
   $("#rLike").classList.toggle("hidden", del);
@@ -2081,6 +2222,7 @@ function refreshReactViews(m){
   if (cur && !$("#card").classList.contains("hidden")) renderReact(cur);
   if (!$("#mailbox").classList.contains("hidden")) renderMailbox();
 }
+$("#cBack").onclick = backOv;
 $("#rLike").onclick = () => react("like");
 $("#rDis").onclick = () => react("dislike");
 $("#rRep").onclick = () => react("report");
@@ -2114,8 +2256,8 @@ function renderBest(){
   document.querySelectorAll(".bestFloat").forEach((el, i) => {
     const b = live[i];
     if (!b){ el.classList.add("hidden"); return; }
-    const txt = b.text.length > 46 ? b.text.slice(0, 45) + "…" : b.text;
-    el.querySelector(".q").textContent = `“${txt}”`;
+    const txt = label(b).length > 46 ? label(b).slice(0, 45) + "…" : label(b);
+    el.querySelector(".q").textContent = b.text ? `“${txt}”` : txt;
     el.querySelector(".m").textContent = `🏆 #${i + 1} · 👍 ${b._like} · from ${b.name || "Anonymous"} → to ${b.to || "Everyone"}`;
     el.classList.remove("hidden");
   });
@@ -2133,8 +2275,8 @@ function renderBoard(){
       const li = document.createElement("li"); if (m._del) li.className = "removed";
       li.innerHTML = '<button type="button" class="main"><span class="rk"></span><span class="pv"></span></button>';
       li.querySelector(".rk").textContent = i + 1;
-      li.querySelector(".pv").textContent = m._del ? RM_TEXT : `${m.text}  — ${m.name || "Anonymous"} → ${m.to || "Everyone"}`;
-      li.querySelector("button").onclick = () => { $("#mailbox").classList.add("hidden"); openCard(m); };
+      li.querySelector(".pv").textContent = m._del ? RM_TEXT : `${label(m)}  — ${m.name || "Anonymous"} → ${m.to || "Everyone"}`;
+      li.querySelector("button").onclick = () => openCard(m);
       li.appendChild(makeRx(m));
       ul.appendChild(li);
     });
@@ -2169,7 +2311,7 @@ function renderTrashView(){
   const ul = $("#trashList"); ul.innerHTML = "";
   for (const m of del){
     const li = document.createElement("li");
-    li.textContent = scramble(m.text, m.id);
+    li.textContent = m.text ? scramble(m.text, m.id) : "📷 ░ ░ ░";
     const sm = document.createElement("small"); sm.textContent = `${RM_TEXT} · 🚩 ${m._rep}`;
     li.appendChild(sm); ul.appendChild(li);
   }
@@ -2199,10 +2341,10 @@ $("#trash").onclick = () => {
   const el = $("#trash"); el.classList.remove("shake"); void el.offsetWidth; el.classList.add("shake");
   clearTimeout(trashTimer);
   if (trashTaps.length >= 6){ trashTaps.length = 0; breakTrash(); return; }
-  trashTimer = setTimeout(() => { renderTrashView(); $("#trashView").classList.remove("hidden"); }, 400);
+  trashTimer = setTimeout(() => { renderTrashView(); pushOv("trashView"); }, 400);
 };
 function breakTrash(){
-  $("#trashView").classList.add("hidden");
+  if (ovStack.includes("trashView")) closeAllOv();
   const el = $("#trash"); el.classList.add("is-broken");
   const c = trashCell();
   const bits = msgs.filter(m => m._del).flatMap(m => [...m.text].filter(ch => ch.trim()));
@@ -2220,7 +2362,7 @@ try { localStorage.removeItem("mytree.messages.v1"); } catch(_){}
 function sanitize(id, m){
   if (!m || typeof m !== "object") return null;
   const text = String(m.text || "").slice(0, CONFIG.MAX_TEXT).trim();
-  if (!text) return null;
+  if (!text && m.p !== true) return null;   // 글이 없어도 사진이 있으면 OK
   return { id: String(id), name: String(CONFIG.RENAMED[m.name] || m.name || "Anonymous").slice(0, CONFIG.MAX_NAME), text,
     kind: m.kind === "gift" ? "gift" : "ornament",
     color: Object.prototype.hasOwnProperty.call(COLORS, m.color) ? m.color : "red", t: Number(m.t) || 0, p: m.p === true,
