@@ -182,6 +182,21 @@
   .hut.on .nm{text-decoration:underline;text-underline-offset:3px}
   .hut.shake{animation:shake .3s}
   .hut.hall{margin-right:8px}
+  /* 집 업그레이드 색 */
+  .hut .sm{color:rgba(200,210,225,.55)}
+  .hut .sn{color:#f4f8ff}
+  .hut .dr{color:#4fd18b}
+  .hut .li{color:#ffd34d;animation:lights 1.2s steps(2) infinite}
+  @keyframes lights{50%{color:#ff7ad9}}
+  .hut.t1 .rf{color:#ff7a6b}
+  .hut.t1 .bd{color:#e8c9a0}
+  .hut.t2 .rf{color:#8fb4ff}
+  .hut.t2 .bd{color:#cfd8ff}
+  .hut.t2 .nm{color:#bcd0ff}
+  .hut.t3 .rf, .hut.t3 .st{color:#ffd34d;text-shadow:0 0 6px rgba(255,210,80,.7)}
+  .hut.t3 .bd{color:#fff0c2}
+  .hut.t3 .nm{color:#ffe680}
+  .hut.t3{filter:drop-shadow(0 0 6px rgba(255,210,80,.45))}
   .hut .st{color:#ffd34d;text-shadow:0 0 6px #ffcc33}
   .hut.hall .rf{color:#c9a06a}
   .hut.hall .nm{color:#9dffb0}
@@ -231,11 +246,12 @@
   .board .sc{flex:0 0 auto;color:#9fc9ab}
   .board .none{color:#6f8f79;font:12px var(--code);padding:2px 6px}
   /* 배경에 떠다니는 베스트 편지 */
-  .bestFloat{position:fixed;left:0;top:17vh;pointer-events:none;white-space:nowrap;
-    font:600 clamp(12px,2.6vw,17px)/1.4 var(--code);color:rgba(255,240,200,.5);text-shadow:0 0 12px rgba(255,210,120,.35);
-    animation:floatX 60s linear infinite;animation-delay:-24s}
-  .bestFloat:nth-child(2){top:29vh;font-size:clamp(11px,2.3vw,15px);color:rgba(235,240,255,.42);animation-duration:74s;animation-delay:-52s}
-  .bestFloat:nth-child(3){top:41vh;font-size:clamp(11px,2.1vw,14px);color:rgba(220,255,230,.36);animation-duration:88s;animation-delay:-8s}
+  .bestFloat{position:fixed;left:0;top:0;pointer-events:none;white-space:nowrap;will-change:transform;
+    font:600 clamp(12px,2.6vw,17px)/1.4 var(--code);color:rgba(255,240,200,.5);text-shadow:0 0 12px rgba(255,210,120,.35)}
+  .bestFloat:nth-child(2){font-size:clamp(11px,2.3vw,15px);color:rgba(235,240,255,.42)}
+  .bestFloat:nth-child(3){font-size:clamp(11px,2.1vw,14px);color:rgba(220,255,230,.36)}
+  .bestFloat.grab{color:rgba(255,246,215,.85);text-shadow:0 0 16px rgba(255,220,130,.7)}
+  .bestFloat.wig .q{display:inline-block;animation:shake .3s}
   .bestFloat .in{display:inline-block;animation:bob 5s ease-in-out infinite}
   .bestFloat:nth-child(2) .in{animation-duration:6.5s}
   .bestFloat:nth-child(3) .in{animation-duration:7.5s}
@@ -254,7 +270,20 @@
   #trash.gulp .bin{animation:gulp .45s}
   #trash.shake{animation:shake .3s}
   @keyframes gulp{0%,100%{transform:scale(1)}40%{transform:scale(1.18,.86)}70%{transform:scale(.94,1.08)}}
-  #trashList{list-style:none;margin:10px 0 0;padding:0;max-height:48vh;overflow:auto}
+  #trashList{list-style:none;margin:14px 0 0;padding:6px 2px 4px;max-height:52vh;overflow:auto;
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:16px 10px}
+  #trashList li.ball{border:0!important;padding:0!important;margin:0!important;filter:none!important;text-align:center}
+  .paper{position:relative;width:100px;height:92px;margin:0 auto;padding:14px 10px;overflow:hidden;
+    display:flex;flex-wrap:wrap;align-content:center;justify-content:center;
+    border-radius:var(--br);transform:rotate(var(--rot));
+    background:radial-gradient(circle at 34% 28%, #f4f0e7 0, #ddd6c6 48%, #b3ab99 100%);
+    box-shadow:inset -9px -11px 18px rgba(0,0,0,.28), inset 7px 7px 12px rgba(255,255,255,.55), 0 7px 14px rgba(0,0,0,.5)}
+  .paper::before{content:"";position:absolute;inset:0;pointer-events:none;
+    background:repeating-linear-gradient(37deg, transparent 0 12px, rgba(0,0,0,.08) 12px 13px),
+               repeating-linear-gradient(-58deg, transparent 0 16px, rgba(0,0,0,.07) 16px 17px),
+               repeating-linear-gradient(104deg, transparent 0 19px, rgba(255,255,255,.3) 19px 20px)}
+  .paper span{display:inline-block;color:#4a4338;opacity:.72;filter:blur(.75px);font:800 13px/1 var(--kr);margin:-1px -2px}
+  #trashList .cap{display:block;margin-top:9px;color:#7b8580;font:11px var(--code)}
   #trashList li{padding:9px 10px;margin-bottom:8px;border:1px dashed rgba(255,255,255,.14);border-radius:10px;color:#8b8f94;font:13px/1.6 var(--code);
     filter:grayscale(1);word-break:break-all}
   #trashList li small{display:block;color:#5d6660;font-size:11px;margin-top:3px}
@@ -461,6 +490,7 @@ const LEVELS = [
   { icon:"🐋", text:"A whale swims across the starry sky" },
   { icon:"❄️", text:"Giant snowflakes start to fall" },
   { icon:"🌌", text:"The stars spell out 2026 — the tree is complete!" },
+  { icon:"🏙", text:"City lights twinkle on the horizon" },
 ];
 const MAX_LEVEL = LEVELS.length - 1;
 
@@ -623,7 +653,7 @@ const bubbles = [];
 /* ---------------- 캔버스 / 그리드 ---------------- */
 const cv = $("#c"), ctx = cv.getContext("2d");
 let W, H, DPR, fs, cw, ch, cols, rows, NCELL, depth, chars, colors, owner, glow, cx, cy, scale, groundRow;
-let bgStars = [], snow = [], groundCh = [];
+let bgStars = [], snow = [], groundCh = [], city = [], cityTallest = null;
 const COST = Math.cos(0.17), SINT = Math.sin(0.17);
 
 function resize(){
@@ -655,6 +685,14 @@ function resize(){
   snow = [];
   for (let i = 0, n = Math.round(NCELL / 140); i < n; i++) snow.push({ x: r() * cols, y: r() * rows, v: 1.5 + r() * 3, dx: (r() - 0.5) * 0.8, ch: r() < 0.5 ? "*" : "." });
   groundCh = Array.from({ length: cols }, () => "_.-~'*_.,"[(r() * 9) | 0]);
+  // 도시 야경용 빌딩들 (레벨 16)
+  city = [];
+  for (let x = 0; x < cols;){
+    const w = 4 + ((r() * 6) | 0), h = 4 + ((r() * Math.max(4, Math.min(16, rows * 0.22))) | 0);
+    city.push({ x, w, h, seed: (r() * 1e6) | 0 });
+    x += w + ((r() * 2) | 0);
+  }
+  cityTallest = city.reduce((a, b) => (b.h > a.h ? b : a), city[0]);
 }
 
 function put(c, r, z, chr, col, own, gl){
@@ -853,7 +891,32 @@ function stepExtras(dt){
 const trainColor = (chh, r, c) => r === 0 ? "rgba(210,215,225,.6)" : c >= 15 ? "#ff5a6e" : c >= 8 ? "#4fd18b" : "#ffd34d";
 const whaleColor = (chh, r) => r <= 1 ? "#bfe6ff" : chh === "o" ? "#ffffff" : "#5fa8ff";
 const cookieColor = (chh) => chh === "o" ? "#3a2414" : (chh === "~" || chh === "_") ? "#fff4e6" : "#d08a4e";
+function drawCity(){
+  const tick = (t / 6) | 0;
+  for (const bd of city){
+    const top = groundRow - bd.h;
+    for (let r = 0; r < bd.h; r++){
+      for (let c = 0; c < bd.w; c++){
+        const gx = bd.x + c, gy = top + r;
+        let chh = " ", col = "";
+        if (r === 0) { chh = "_"; col = "rgba(110,130,175,.55)"; }
+        else if (c === 0 || c === bd.w - 1){ chh = "|"; col = "rgba(95,115,160,.5)"; }
+        else if (r % 2 === 1 && c % 2 === 1){
+          const lit = hashStr(bd.seed + ":" + r + ":" + c + ":" + (((tick + c * 3 + r) / 4) | 0)) % 5 < 2;
+          chh = lit ? "=" : "."; col = lit ? "rgba(255,214,110,.8)" : "rgba(90,105,140,.45)";
+        }
+        put(gx, gy, -92, chh, col, 0, 0);   // 빈 칸(" ")도 깔아서 뒤의 별을 가려요
+      }
+    }
+  }
+  if (cityTallest){
+    const ax = cityTallest.x + (cityTallest.w >> 1), ay = groundRow - cityTallest.h;
+    put(ax, ay - 1, -92, "|", "rgba(150,160,190,.6)", 0, 0);
+    if (Math.sin(t * 3) > 0) put(ax, ay - 2, -92, "*", "#ff4d5e", 0, 1);
+  }
+}
 function drawExtras(){
+  if (LEVEL >= 16) drawCity();
   // 레벨 15: 별자리로 2026
   if (LEVEL >= 15){
     const art = CONSTELLATION, c0 = Math.max(2, Math.round(cols * 0.06)), r0 = Math.round(rows * 0.36);
@@ -1018,6 +1081,7 @@ function frame(now){
   ca = Math.cos(angle); sa = Math.sin(angle);
   stepActors(dt);
   stepExtras(dt);
+  stepFloats(dt);
   stepParticles(dt);
 
   depth.fill(-1e9); chars.fill(undefined); owner.fill(0); glow.fill(0);
@@ -1053,6 +1117,7 @@ function frame(now){
   }
   drawParticles();
   drawExtras();
+  drawPhotoArts();
   if (santa.active) sprite(SANTA, Math.round(santa.x), Math.round(rows * 0.13 + Math.sin(t * 2.2) * 1.2), -55, santaColor, 0);
   if (ufo.active){
     const ur = Math.round(rows * 0.17 + Math.sin(t * 1.5) * 1.5), uc = Math.round(ufo.x);
@@ -1291,13 +1356,14 @@ const EGGS = [
   ["trash",  "🗑", "Trash Smasher",  "Keep tapping the trash can until it breaks."],
   ["cookie", "🍪", "Cookie Friend",  "Tap the tree trunk — someone is hiding behind it."],
   ["shake",  "📳", "Snow Globe",     "On a phone, shake it hard."],
+  ["float",  "💖", "Number One Fan", "Tap a floating best letter 5 times, fast."],
 ];
 const EGG_TOTAL = EGGS.length;
 const EGG_HINTS = {
   spin: "Spin the tree round and round?", star: "Poke the star a few times?", moon: "Touch the moon?",
   cat: "Bother a napping cat?", sleep: "Leave the tree alone for a while?", konami: "↑ ↑ ↓ ↓ ← → ← → B A?",
   word: "A magic word in your message?", xmas: "Come back on Christmas?",
-  mail: "Knock on a mailbox again and again?", wish: "One star in the sky looks a little different?", trash: "Tap the trash can again and again?", cookie: "Someone is hiding behind the tree trunk?", shake: "What if the whole screen were a snow globe?",
+  mail: "Knock on a mailbox again and again?", wish: "One star in the sky looks a little different?", trash: "Tap the trash can again and again?", cookie: "Someone is hiding behind the tree trunk?", shake: "What if the whole screen were a snow globe?", float: "Cheer for a floating letter again and again?",
 };
 let eggListOpen = false;
 // 이스터에그는 모두가 공유해요: 누군가 찾으면 Firebase /eggs 에 기록되고 모두의 카운트가 올라가요
@@ -1659,11 +1725,13 @@ function firstGesture(e){
 let downX = 0, downY = 0, lastX = 0, lastT = 0, moved = 0;
 document.addEventListener("pointerdown", wake, true);
 cv.addEventListener("pointerdown", e => {
+  if (floatDown(e)) return;   // 떠다니는 편지를 잡았으면 트리는 그대로
   dragging = true; focus = null; cv.classList.add("drag");
   downX = lastX = e.clientX; downY = e.clientY; lastT = performance.now(); moved = 0;
   cv.setPointerCapture(e.pointerId);
 });
 cv.addEventListener("pointermove", e => {
+  if (floatDrag){ floatMove(e); return; }
   if (dragging){
     const dx = e.clientX - lastX, now = performance.now();
     angle += dx * 0.012;
@@ -1671,11 +1739,12 @@ cv.addEventListener("pointermove", e => {
     lastX = e.clientX; lastT = now;
     moved = Math.max(moved, Math.hypot(e.clientX - downX, e.clientY - downY));
   } else {
-    cv.classList.toggle("hover", !!(hitTest(e.clientX, e.clientY) || near(starHit, e) || near(moonHit, e) || near(catHit, e) || near(wishHit, e)));
+    cv.classList.toggle("hover", !!(hitTest(e.clientX, e.clientY) || near(starHit, e) || near(moonHit, e) || near(catHit, e) || near(wishHit, e) || floatAt(e.clientX, e.clientY)));
   }
 });
 const near = (h, e) => h && Math.hypot(h.x - e.clientX, h.y - e.clientY) < h.r;
 function endDrag(e){
+  if (floatDrag){ floatUp(); return; }
   if (!dragging) return;
   dragging = false; cv.classList.remove("drag");
   if (Math.abs(vel) > 0.3) spinDir = Math.sign(vel);
@@ -1815,15 +1884,44 @@ function updateMail(){
   if (!$("#mailbox").classList.contains("hidden")) renderMailbox();
 }
 // 바닥에 줄지어 선 ASCII 집 모양 메일함
+// 편지 수에 따라 집이 커지고 색이 바뀌어요: 0~9 오두막 → 10+ 빨간 지붕 굴뚝집 → 20+ 전구 단 2층집 → 30+ 황금 저택 (최대)
+const hutTier = n => n >= 30 ? 3 : n >= 20 ? 2 : n >= 10 ? 1 : 0;
 function hutArt(n, unread){
-  const win = (unread ? "*" : n ? "=" : ".") + (n ? String(Math.min(n, 9)) : " ");
-  return [
+  const tier = hutTier(n);
+  const win = n >= 10 ? String(Math.min(n, 99)) : (unread ? "*" : n ? "=" : ".") + (n ? String(n) : " ");
+  if (tier === 0) return [
     ["rf", "     .     \n"],
     ["rf", "    / \\    \n"],
     ["rf", "   /   \\   \n"],
     ["rf", "  /_____\\  \n"],
     ["bd", "  | ["], ["wn", win], ["bd", "]|  \n"],
     ["bd", "  |__|__|  "],
+  ];
+  if (tier === 1) return [
+    ["sm", "    )      \n"],
+    ["rf", "   |#/\\    \n"],
+    ["rf", "    /  \\   \n"],
+    ["sn", "   /~~~~\\  \n"],
+    ["rf", "  /______\\ \n"],
+    ["bd", "  | ["], ["wn", win], ["bd", "] | \n"],
+    ["bd", "  |_["], ["dr", "o"], ["bd", "]__| "],
+  ];
+  if (tier === 2) return [
+    ["li", "  .*.*.*.  \n"],
+    ["rf", "   /^^^\\   \n"],
+    ["rf", "  /_____\\  \n"],
+    ["bd", "  |["], ["wn", "#"], ["bd", "]["], ["wn", "#"], ["bd", "]| \n"],
+    ["bd", "  | ["], ["wn", win], ["bd", "] | \n"],
+    ["bd", "  |__|___| "],
+  ];
+  return [
+    ["st", "     *     \n"],
+    ["rf", "    /^\\    \n"],
+    ["rf", "  _/___\\_  \n"],
+    ["rf", " /_______\\ \n"],
+    ["bd", " |["], ["wn", "#"], ["bd", "] ["], ["wn", "#"], ["bd", "]| \n"],
+    ["bd", " | ["], ["wn", win], ["bd", "]  | \n"],
+    ["bd", " |__|_|__| "],
   ];
 }
 function hallArt(n, unread){
@@ -1845,7 +1943,7 @@ function renderStreet(){
     const list = lettersFor(name).filter(m => !m._del), unread = list.filter(m => !r.has(m.id)).length;
     const b = document.createElement("button");
     b.type = "button";
-    b.className = "hut" + (name === EVERYONE ? " hall" : "") + (unread ? " has" : "") + (list.length ? " full" : "") + (hlName === name ? " on" : "");
+    b.className = "hut" + (name === EVERYONE ? " hall" : " t" + hutTier(list.length)) + (unread ? " has" : "") + (list.length ? " full" : "") + (hlName === name ? " on" : "");
     b.title = `${name === EVERYONE ? "Letters for everyone" : name + "'s mailbox"} — ${list.length} letter${list.length === 1 ? "" : "s"}${unread ? `, ${unread} new` : ""}`;
     const pre = document.createElement("pre");
     for (const [cls, txt] of (name === EVERYONE ? hallArt : hutArt)(list.length, unread)){
@@ -2143,7 +2241,7 @@ let reactionsLoaded = false;
 let deletedIds = new Set();
 const rc = (m, type) => Object.keys(((reactions[m.id] || {})[type]) || {}).length;
 const iDid = (m, type) => !!(((reactions[m.id] || {})[type] || {})[DEVICE]);
-const RM_TEXT = "삭제된 게시물입니다.";
+const RM_TEXT = "삭제된 편지입니다.";
 const label = m => m.text || "📷 (photo)";   // 사진만 있는 편지의 미리보기 문구
 
 async function loadReactions(){
@@ -2277,6 +2375,65 @@ function makeRx(m){
 
 /* 배경에 떠다니는 베스트 편지 TOP 3 (좋아요 순) */
 let bestKey = "";
+// 사진이 베스트(TOP 3)에 오르면 그 사진을 아스키 그림으로 바꿔 떠다니는 편지 위에 띄워요
+const slotArt = [null, null, null];            // 슬롯별 { id, art }
+const asciiCache = new Map();                   // 편지id → art
+const ART_RAMP = " .:-=+*#%@";
+function photoToAscii(src, wCells){
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const aspect = img.naturalHeight / Math.max(1, img.naturalWidth);
+      const w = wCells, h = Math.max(4, Math.round(w * aspect * (cw / ch)));
+      const c = document.createElement("canvas"); c.width = w; c.height = h;
+      const x = c.getContext("2d"); x.drawImage(img, 0, 0, w, h);
+      let data; try { data = x.getImageData(0, 0, w, h).data; } catch(_){ return resolve(null); }
+      const chars = [], colors = [];
+      // 사진마다 밝기 범위를 늘려서(대비 자동 보정) 글자 그림이 또렷하게
+      const lums = [];
+      for (let i = 0; i < w * h; i++) lums.push((0.299 * data[i * 4] + 0.587 * data[i * 4 + 1] + 0.114 * data[i * 4 + 2]) / 255);
+      const sorted = lums.slice().sort((a, b) => a - b);
+      const lo = sorted[Math.floor(sorted.length * 0.03)], hi = sorted[Math.floor(sorted.length * 0.97)] || 1;
+      const span = Math.max(0.08, hi - lo);
+      for (let i = 0; i < w * h; i++){
+        const r = data[i * 4], g = data[i * 4 + 1], b = data[i * 4 + 2];
+        const n = Math.max(0, Math.min(1, (lums[i] - lo) / span));
+        chars.push(n < 0.06 ? "" : ART_RAMP[Math.max(1, Math.min(ART_RAMP.length - 1, (n * ART_RAMP.length) | 0))]);
+        const L = v => Math.min(255, Math.round(v * 0.85 + 50 + n * 60));
+        colors.push(`rgba(${L(r)},${L(g)},${L(b)},${(0.55 + n * 0.35).toFixed(2)})`);
+      }
+      resolve({ w, h, chars, colors });
+    };
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
+}
+async function loadSlotArt(i, m){
+  const want = m && m.p && !m._del ? m.id : null;
+  if (!want){ slotArt[i] = null; return; }
+  if (slotArt[i] && slotArt[i].id === want) return;
+  slotArt[i] = { id: want, art: asciiCache.get(want) || null };
+  if (slotArt[i].art) return;
+  let src = null; try { src = await getPhoto(m); } catch(_){}
+  if (!src || !slotArt[i] || slotArt[i].id !== want) return;
+  const art = await photoToAscii(src, Math.max(20, Math.min(46, Math.floor(cols * 0.3))));
+  if (!art) return;
+  asciiCache.set(want, art);
+  if (slotArt[i] && slotArt[i].id === want) slotArt[i].art = art;
+}
+function drawPhotoArts(){
+  for (let i = 0; i < slotArt.length; i++){
+    const sa = slotArt[i]; if (!sa || !sa.art) continue;
+    const f = floats[i]; if (!f || f.x === null || f.el.classList.contains("hidden")) continue;
+    const a = sa.art;
+    const y = Math.max(50, Math.min(innerHeight - 220, f.yf * innerHeight));
+    const c0 = Math.round(f.x / cw), r0 = Math.round(y / ch) - a.h - 1;   // 편지 글씨 바로 위
+    for (let r = 0; r < a.h; r++) for (let c = 0; c < a.w; c++){
+      const k = r * a.w + c;
+      if (a.chars[k]) put(c0 + c, r0 + r, -88, a.chars[k], a.colors[k], 0, 0);
+    }
+  }
+}
 function renderBest(){
   const live = msgs.filter(m => !m._del && m._like > 0).sort((a, b) => b._like - a._like || b.t - a.t).slice(0, 3);
   const key = live.map(m => m.id + ":" + m._like).join("|");
@@ -2284,12 +2441,75 @@ function renderBest(){
   bestKey = key;
   document.querySelectorAll(".bestFloat").forEach((el, i) => {
     const b = live[i];
-    if (!b){ el.classList.add("hidden"); return; }
+    if (!b){ el.classList.add("hidden"); slotArt[i] = null; return; }
     const txt = label(b).length > 46 ? label(b).slice(0, 45) + "…" : label(b);
     el.querySelector(".q").textContent = b.text ? `“${txt}”` : txt;
-    el.querySelector(".m").textContent = `🏆 #${i + 1} · 👍 ${b._like} · from ${b.name || "Anonymous"} → to ${b.to || "Everyone"}`;
+    el.querySelector(".m").textContent = `🏆 #${i + 1} · 👍 ${b._like} · from ${b.name || "Anonymous"} → to ${b.to || "Everyone"}${b.p ? " · 📷" : ""}`;
     el.classList.remove("hidden");
   });
+  for (let i = 0; i < 3; i++) loadSlotArt(i, live[i]);
+}
+
+// 떠다니는 편지를 프레임마다 움직이고, 끌어서 옮기거나 휙 던질 수 있어요
+const floats = [...document.querySelectorAll(".bestFloat")].map((el, i) => ({ el, i, x: null, yf: [0.17, 0.29, 0.41][i], vx: null, w: 200, drag: false, taps: [] }));
+const FLOAT_SECS = [60, 74, 88];   // 화면을 한 번 가로지르는 시간(초)
+function stepFloats(dt){
+  for (const f of floats){
+    if (f.el.classList.contains("hidden")) continue;
+    const base = innerWidth / FLOAT_SECS[f.i];
+    if (f.x === null){ f.x = Math.random() * innerWidth * 0.8; f.vx = base; }
+    f.w = f.el.offsetWidth || f.w;
+    if (!f.drag){
+      f.vx += (base - f.vx) * Math.min(1, dt * 0.9);
+      f.x += f.vx * dt;
+      if (f.x > innerWidth + 20) f.x = -f.w;
+      if (f.x < -f.w - 60) f.x = innerWidth;
+    }
+    const y = Math.max(50, Math.min(innerHeight - 220, f.yf * innerHeight));
+    f.el.style.transform = `translate(${f.x.toFixed(1)}px, ${y.toFixed(1)}px)`;
+  }
+}
+function floatAt(x, y){
+  for (let i = floats.length - 1; i >= 0; i--){
+    const f = floats[i]; if (f.el.classList.contains("hidden")) continue;
+    const r = f.el.getBoundingClientRect();
+    if (x >= r.left - 6 && x <= r.right + 6 && y >= r.top - 6 && y <= r.bottom + 6) return f;
+  }
+  return null;
+}
+let floatDrag = null;
+function floatDown(e){
+  const f = floatAt(e.clientX, e.clientY); if (!f) return false;
+  const y = Math.max(50, Math.min(innerHeight - 220, f.yf * innerHeight));
+  floatDrag = { f, offX: e.clientX - f.x, offY: e.clientY - y, sx: e.clientX, sy: e.clientY, lx: e.clientX, lt: performance.now(), vx: 0, moved: 0 };
+  f.drag = true; f.el.classList.add("grab");
+  cv.setPointerCapture(e.pointerId);
+  return true;
+}
+function floatMove(e){
+  const d = floatDrag, f = d.f, now = performance.now();
+  f.x = e.clientX - d.offX;
+  f.yf = (e.clientY - d.offY) / innerHeight;
+  d.vx = (e.clientX - d.lx) / Math.max(0.016, (now - d.lt) / 1000);
+  d.lx = e.clientX; d.lt = now;
+  d.moved = Math.max(d.moved, Math.hypot(e.clientX - d.sx, e.clientY - d.sy));
+}
+function floatUp(){
+  const d = floatDrag, f = d.f; floatDrag = null;
+  f.drag = false; f.el.classList.remove("grab");
+  if (d.moved >= 6){ f.vx = Math.max(-2500, Math.min(2500, d.vx)); return; }   // 던지기
+  // 살짝 누르기: 흔들리고, 3초 안에 5번이면 하트로 펑!
+  f.el.classList.remove("wig"); void f.el.offsetWidth; f.el.classList.add("wig");
+  const now = performance.now();
+  f.taps = f.taps.filter(x => now - x < 3000); f.taps.push(now);
+  if (f.taps.length >= 5){
+    f.taps = [];
+    const r = f.el.getBoundingClientRect();
+    shapeBurst((r.left + r.width / 2) / cw, (r.top + r.height / 2) / ch, "heart", FW_COLORS[3]);
+    burst((r.left + r.width / 2) / cw, (r.top + r.height / 2) / ch, 40, FW_COLORS[1], rows * 0.1);
+    f.x = -f.w - 40;   // 펑 터진 뒤 왼쪽 끝에서 다시 등장
+    egg("float", "💖 You cheered the best letter so hard it burst into hearts!");
+  }
 }
 
 /* 마을회관 보드: 좋아요 BEST */
@@ -2334,14 +2554,27 @@ function renderTrash(){
 function renderTrashView(){
   const del = msgs.filter(m => m._del).sort((a, b) => b.t - a.t);
   $("#tvLead").textContent = del.length
-    ? `${del.length} letter${del.length > 1 ? "s were" : " was"} reported ${REPORT_LIMIT}+ times and smashed into pieces. You can only see the broken bits.`
+    ? `${del.length} letter${del.length > 1 ? "s were" : " was"} reported ${REPORT_LIMIT}+ times, crumpled up and tossed. Only smudged bits are left.`
     : "Nothing in the trash. Everyone's being nice 🎄";
   const ul = $("#trashList"); ul.innerHTML = "";
   for (const m of del){
-    const li = document.createElement("li");
-    li.textContent = m.text ? scramble(m.text, m.id) : "📷 ░ ░ ░";
-    const sm = document.createElement("small"); sm.textContent = `${RM_TEXT} · 🚩 ${m._rep}`;
-    li.appendChild(sm); ul.appendChild(li);
+    const r = rng(hashStr(m.id));
+    const li = document.createElement("li"); li.className = "ball";
+    const paper = document.createElement("div"); paper.className = "paper";
+    const pct = () => (38 + r() * 24).toFixed(0) + "%";
+    paper.style.setProperty("--br", `${pct()} ${pct()} ${pct()} ${pct()} / ${pct()} ${pct()} ${pct()} ${pct()}`);
+    paper.style.setProperty("--rot", (r() * 40 - 20).toFixed(1) + "deg");
+    // 구겨져서 뭉개진 글자들: 섞고, 기울이고, 번지게
+    const chars = [...(m.text || "📷")].filter(ch => ch.trim());
+    for (let i = chars.length - 1; i > 0; i--){ const j = (r() * (i + 1)) | 0; [chars[i], chars[j]] = [chars[j], chars[i]]; }
+    for (const chh of chars.slice(0, 18)){
+      const sp = document.createElement("span");
+      sp.textContent = r() < 0.25 ? "░" : chh;
+      sp.style.transform = `rotate(${(r() * 120 - 60).toFixed(0)}deg) translate(${(r() * 6 - 3).toFixed(1)}px, ${(r() * 6 - 3).toFixed(1)}px) scale(${(0.7 + r() * 0.7).toFixed(2)}, ${(0.6 + r() * 0.6).toFixed(2)})`;
+      paper.appendChild(sp);
+    }
+    const cap = document.createElement("span"); cap.className = "cap"; cap.textContent = `${RM_TEXT} · 🚩 ${m._rep}`;
+    li.appendChild(paper); li.appendChild(cap); ul.appendChild(li);
   }
 }
 function trashCell(){
