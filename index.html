@@ -13,7 +13,7 @@
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Nanum+Gothic+Coding:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
   :root{
-    --street: 104px;
+    --street: 122px;
     --kr: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", "Malgun Gothic", sans-serif;
     --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
     --code: "JetBrains Mono", "Nanum Gothic Coding", "D2Coding", ui-monospace, monospace;
@@ -171,11 +171,25 @@
   .chip.mail.shake{animation:shake .35s}
   @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px) rotate(-3deg)}75%{transform:translateX(3px) rotate(3deg)}}
   /* ---- 바닥의 메일함 마을 ---- */
-  #street{position:fixed;left:0;right:0;bottom:0;height:calc(var(--street) + env(safe-area-inset-bottom));padding:6px 10px env(safe-area-inset-bottom);
-    display:flex;align-items:flex-end;gap:2px;overflow-x:auto;overflow-y:hidden;z-index:4;scrollbar-width:none;padding-right:84px;
-    background:linear-gradient(to top, rgba(4,8,10,.92), rgba(4,8,10,.55) 70%, rgba(4,8,10,0));}
+  #street{position:fixed;left:0;right:0;bottom:0;height:calc(var(--street) + env(safe-area-inset-bottom));padding:16px 10px env(safe-area-inset-bottom);
+    display:flex;align-items:stretch;gap:2px;overflow-x:auto;overflow-y:hidden;z-index:4;scrollbar-width:none;padding-right:84px;
+    background:linear-gradient(to top, rgba(22,13,7,.97), rgba(24,15,8,.86) 72%, rgba(24,15,8,.35) 88%, rgba(24,15,8,0));}
   #street::-webkit-scrollbar{display:none}
-  #street .inner{display:flex;gap:2px;margin:0 auto;align-items:flex-end;position:relative;padding-bottom:4px}
+  #street .inner{display:flex;gap:2px;margin:0 auto;align-items:stretch;position:relative;padding-bottom:4px}
+  /* ---- 땅굴: 굴뚝에서 내려온 길이 모든 집으로 이어져요 ---- */
+  #tunnel{position:fixed;left:0;right:0;height:12px;bottom:calc(var(--street) + env(safe-area-inset-bottom) - 15px);z-index:5;pointer-events:none;
+    border-top:1px dashed rgba(190,140,92,.55);border-bottom:1px dashed rgba(190,140,92,.55);
+    background:repeating-linear-gradient(90deg, rgba(255,214,140,.13) 0 2px, transparent 2px 14px), rgba(46,29,16,.88);
+    background-size:14px 100%, auto;animation:tunnelFlow 1.6s linear infinite}
+  @keyframes tunnelFlow{to{background-position:14px 0, 0 0}}
+  .hut{display:flex;flex-direction:column;align-items:center;justify-content:flex-end}
+  .hut .pipe{flex:1 1 auto;min-height:3px;width:0;border-left:2px dotted rgba(190,140,92,.6);margin-bottom:-1px;transition:border-color .3s}
+  .hut.arrive .pipe{border-left-color:#ffe680;filter:drop-shadow(0 0 4px #ffd34d)}
+  .hut.arrive{animation:arrive .7s cubic-bezier(.3,1.6,.5,1)}
+  @keyframes arrive{0%{transform:translateY(0)}30%{transform:translateY(3px) scale(1.06,.94)}60%{transform:translateY(-4px)}100%{transform:none}}
+  .envl{position:fixed;left:-9px;top:-10px;width:18px;height:20px;z-index:6;pointer-events:none;text-align:center;
+    font:16px/20px var(--code);color:#ffe680;text-shadow:0 0 6px #ffd34d,0 0 14px rgba(255,200,80,.8);will-change:transform}
+  .envl.under{color:#fff3c4}
   #street .inner::after{content:"";position:absolute;left:-10px;right:-10px;bottom:0;border-top:1px dashed rgba(230,240,255,.35)}
   .hut{flex:0 0 auto;background:none;border:0;padding:0 2px 4px;cursor:pointer;color:#6f8a7a;text-align:center;font:10.5px/1.12 var(--code);
     -webkit-tap-highlight-color:transparent;transition:transform .15s}
@@ -221,7 +235,7 @@
   .hut.hall .nm{color:#9dffb0}
   @keyframes hutGlow{0%,100%{filter:drop-shadow(0 0 0 rgba(255,220,100,0))}50%{filter:drop-shadow(0 0 7px rgba(255,220,100,.55))}}
   @media (max-width: 600px){
-    :root{--street: 88px}
+    :root{--street: 104px}
     .hut{font-size:8px} .hut .nm{font-size:10px}
     #street{padding-right:70px;-webkit-mask-image:linear-gradient(to right, transparent 0, #000 14px, #000 calc(100% - 96px), transparent calc(100% - 66px));mask-image:linear-gradient(to right, transparent 0, #000 14px, #000 calc(100% - 96px), transparent calc(100% - 66px))}
     #trash{font-size:8.5px} #trash .pile{font-size:8px;max-width:60px}
@@ -304,7 +318,19 @@
                repeating-linear-gradient(104deg, transparent 0 19px, rgba(255,255,255,.3) 19px 20px)}
   .paper span{display:inline-block;color:#4a4338;opacity:.72;filter:blur(.75px);font:800 13px/1 var(--kr);margin:-1px -2px}
   .wad{position:relative;width:108px;height:104px;margin:0 auto}
-  .wad span{position:absolute;left:50%;top:50%;white-space:pre;font-weight:700;line-height:1;font-family:var(--kr)}
+  .wad{cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+  .wad span{position:absolute;left:50%;top:50%;white-space:pre;font-weight:700;line-height:1;font-family:var(--kr);
+    transition:transform .28s cubic-bezier(.3,1.6,.5,1),opacity .4s}
+  .wad.rustle{animation:rustle .32s}
+  @keyframes rustle{0%,100%{transform:none}20%{transform:rotate(-7deg) scale(1.04,.96)}45%{transform:rotate(6deg) scale(.97,1.03)}70%{transform:rotate(-3deg)}}
+  .wad.open span{opacity:0!important}
+  .wad .unf{position:absolute;inset:-14px -8px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+    padding:6px;font:700 13px/1.45 var(--kr);color:#d9ddd7;word-break:keep-all;overflow-wrap:anywhere;overflow:hidden;
+    opacity:0;transform:scale(.2) rotate(-14deg);transition:opacity .35s,transform .45s cubic-bezier(.3,1.5,.5,1);pointer-events:none;
+    text-shadow:0 0 8px rgba(0,0,0,.9)}
+  .wad.open .unf{opacity:1;transform:none;position:relative;inset:auto;width:calc(100% + 16px);margin:0 -8px;min-height:104px}
+  .wad.open{height:auto;min-height:104px}
+  .wad .unf small{display:block;font:10px var(--code);color:#7b8580;margin-top:4px}
   #trashList .cap{display:block;margin-top:9px;color:#7b8580;font:11px var(--code)}
   #trashList li{padding:9px 10px;margin-bottom:8px;border:1px dashed rgba(255,255,255,.14);border-radius:10px;color:#8b8f94;font:13px/1.6 var(--code);
     filter:grayscale(1);word-break:break-all}
@@ -449,6 +475,7 @@
   <ul id="gEggList" class="hidden"></ul>
 </aside>
 
+<div id="tunnel" aria-hidden="true"></div>
 <nav id="street" aria-label="Mailboxes"><div class="inner" id="streetInner"></div></nav>
 
 
@@ -1050,6 +1077,7 @@ function drawExtras(){
 }
 
 function stepActors(dt){
+  stepPostSanta(dt);
   // 산타
   if (LEVEL >= 5 && !santa.active && t > santa.nextAt) summon("santa");
   if (santa.active){
@@ -1084,6 +1112,105 @@ function stepActors(dt){
   }
   if (showRockets > 0 && t > nextShowRocket){ launchRocket(); showRockets--; nextShowRocket = t + rand(0.15, 0.45); }
   if (LEVEL >= 2 && t > nextMeteor){ spawnMeteor(); nextMeteor = t + rand(3.5, 8); }
+}
+
+/* ---------------- 땅굴 우체국: 굴뚝 → 땅속 통로 → 집 ---------------- */
+const CHIMNEY = [" .~~~. ", "[_____]", " |_|_| ", " |_|_| "];
+function chimneyPos(){
+  const rightC = Math.min(cols - 10, Math.round((cx + Math.min(scale * 0.56, W * 0.36)) / cw));   // 눈사람 자리
+  const c0 = Math.max(2, Math.min(cols - 8, rightC + 10));
+  return { c0, cc: c0 + 3, r0: groundRow - CHIMNEY.length };
+}
+function chimneyPx(){ const p = chimneyPos(); return { x: (p.cc + 0.5) * cw, top: (p.r0 + 0.5) * ch, ground: groundRow * ch }; }
+function drawUnderground(){
+  const { c0, r0 } = chimneyPos();
+  // 흙: 땅 아래에 흐릿한 흙 알갱이
+  const soil = ".,'`:";
+  for (let rr = groundRow + 1; rr < rows; rr++){
+    for (let c = 0; c < cols; c++){
+      const h = ((c * 73856093) ^ (rr * 19349663)) >>> 0;
+      if (h % 17 !== 0) continue;
+      put(c, rr, -96, soil[h % 5], (h >> 5) % 3 ? "rgba(150,104,66,.4)" : "rgba(200,150,100,.5)", 0, 0);
+    }
+  }
+  // 굴뚝 아래로 곧게 내려가는 통로
+  for (let rr = groundRow; rr < rows; rr++){
+    put(c0 + 1, rr, -20, "|", "#a8794f", 0, 0);
+    put(c0 + 5, rr, -20, "|", "#a8794f", 0, 0);
+    for (let c = c0 + 2; c <= c0 + 4; c++) put(c, rr, -20, (rr + (t * 6 | 0)) % 4 === 0 && c === c0 + 3 ? "." : " ", "rgba(255,214,140,.35)", 0, 0);
+  }
+  // 땅 위로 솟은 굴뚝 (지붕엔 눈)
+  sprite(CHIMNEY, c0, r0, 0.6, (chh, r) => r === 0 ? "#f4f8ff" : chh === "|" || chh === "[" || chh === "]" ? "#d8916c" : "#b5654a", 0);
+  if (Math.random() < 0.05) parts.push({ x: c0 + 3 + rand(-0.5, 0.5), y: r0 - 0.5, vx: rand(-0.3, 0.6), vy: -rand(1, 2), life: 0, max: rand(1.2, 2), pal: ["rgba(220,225,235,.5)", "rgba(180,185,195,.35)"], spark: true });
+}
+// 산타 배달: 편지를 받아서 굴뚝에 쏙
+const postSanta = { active: false, phase: "", x: 0, y: 0, t0: 0, m: null, sx: 0, sy: 0, tx: 0, ty: 0 };
+const postQueue = [];
+function deliver(m){
+  m._transit = true;
+  setTimeout(() => { if (m._transit){ m._transit = false; renderStreet(); } }, 20000);   // 혹시 멈춰도 결국 도착
+  postQueue.push(m);
+  if (!postSanta.active) nextDelivery();
+}
+function nextDelivery(){
+  const m = postQueue.shift(); if (!m) return;
+  const p = chimneyPos();
+  Object.assign(postSanta, { active: true, phase: "in", t0: t, m, sx: -SANTA[0].length, sy: Math.round(rows * 0.12), tx: p.cc - 4, ty: p.r0 - 5 });
+  postSanta.x = postSanta.sx; postSanta.y = postSanta.sy;
+}
+function stepPostSanta(dt){
+  const s = postSanta; if (!s.active) return;
+  if (s.phase === "in"){
+    const p = chimneyPos(); s.tx = p.cc - 4; s.ty = p.r0 - 5;
+    const a = Math.min(1, (t - s.t0) / 2.4), e = 1 - Math.pow(1 - a, 3);
+    s.x = s.sx + (s.tx - s.sx) * e; s.y = s.sy + (s.ty - s.sy) * e + Math.sin(a * Math.PI) * -2;
+    if (Math.random() < dt * 25) parts.push({ x: s.x + 2, y: s.y + 2, vx: -2, vy: rand(-0.5, 1.5), life: 0, max: rand(0.6, 1.2), pal: ["#fff3b0","#ffd34d"], g: 2, spark: true });
+    if (a >= 1){
+      s.phase = "drop"; s.t0 = t;
+      bubbles.push({ x: (s.x + 4) * cw, y: (s.y - 1) * ch, text: "Ho ho ho! 📮", until: t + 1.4 });
+      letterRoute(s.m, (s.x + 4.5) * cw, (s.y + 2.5) * ch);
+    }
+  } else if (s.phase === "drop"){
+    s.y = s.ty + Math.sin((t - s.t0) * 5) * 0.4;
+    if (t - s.t0 > 0.9){ s.phase = "out"; s.t0 = t; }
+  } else {
+    s.x += dt * (cols + 40) / 5; s.y -= dt * 9;
+    if (Math.random() < dt * 25) parts.push({ x: s.x + 2, y: s.y + 2, vx: -2, vy: rand(-0.5, 1.5), life: 0, max: rand(0.6, 1.2), pal: ["#fff3b0","#ffd34d"], g: 2, spark: true });
+    if (s.x > cols + 2 || s.y < -4){ s.active = false; setTimeout(nextDelivery, 300); }
+  }
+}
+const sleep = ms => new Promise(res => setTimeout(res, ms));
+async function letterRoute(m, sx, sy){
+  const el = document.createElement("div"); el.className = "envl"; el.textContent = "✉";
+  document.body.appendChild(el);
+  const go = (a, b, dur, easing) => el.animate([{ transform: `translate(${a[0]}px,${a[1]}px)` }, { transform: `translate(${b[0]}px,${b[1]}px)` }],
+    { duration: dur, easing, fill: "forwards" }).finished;
+  try {
+    const cp = chimneyPx();
+    await go([sx, sy], [cp.x, cp.top], 520, "cubic-bezier(.5,0,.9,.6)");                 // 굴뚝으로 쏙
+    burst(cp.x / cw, cp.top / ch, 8, ["#f4f8ff", "#ffe680"], rows * 0.03);
+    el.classList.add("under");
+    const tr = $("#tunnel").getBoundingClientRect(), ty = tr.top + tr.height / 2;
+    await go([cp.x, cp.top], [cp.x, ty], Math.max(600, (ty - cp.top) * 2), "cubic-bezier(.4,0,.8,.6)");   // 땅속으로 쭉
+    const name = isForAll(m) ? EVERYONE : m.to;
+    const sel = `#streetInner .hut[data-name="${CSS.escape(name)}"]`;
+    let hut = document.querySelector(sel);
+    if (hut){
+      const st = $("#street"), hr0 = hut.getBoundingClientRect();
+      if (hr0.left < 20 || hr0.right > W - 90){ st.scrollTo({ left: st.scrollLeft + hr0.left + hr0.width / 2 - W / 2, behavior: "smooth" }); await sleep(480); }
+    }
+    hut = document.querySelector(sel);
+    const hr = hut ? hut.getBoundingClientRect() : { left: W / 2, width: 0, top: H - 60 };
+    const hx = hr.left + hr.width / 2;
+    await go([cp.x, ty], [hx, ty], Math.max(500, Math.min(1900, Math.abs(hx - cp.x) * 2.4)), "ease-in-out");   // 길 따라 슝
+    const pre = hut && hut.querySelector("pre"), roof = pre ? pre.getBoundingClientRect().top + 4 : hr.top + 20;
+    await go([hx, ty], [hx, roof], 420, "ease-in");                                       // 집으로 쏙
+  } catch(_){}
+  el.remove();
+  m._transit = false; renderStreet();
+  const h2 = document.querySelector(`#streetInner .hut[data-name="${CSS.escape(isForAll(m) ? EVERYONE : m.to)}"]`);
+  if (h2){ h2.classList.add("arrive"); setTimeout(() => h2.classList.remove("arrive"), 1600); }
+  toast(`📬 Delivered to ${isForAll(m) ? "everyone's hall" : m.to + "'s house"}!`, 2200);
 }
 
 /* 색상 함수 */
@@ -1233,6 +1360,7 @@ function frame(now){
   drawSecretGlobe();
   drawPhotoArts();
   if (santa.active) sprite(SANTA, Math.round(santa.x), Math.round(rows * 0.13 + Math.sin(t * 2.2) * 1.2), -55, santaColor, 0);
+  if (postSanta.active) sprite(SANTA, Math.round(postSanta.x), Math.round(postSanta.y), 0.95, santaColor, 0);
   if (ufo.active){
     const ur = Math.round(rows * 0.17 + Math.sin(t * 1.5) * 1.5), uc = Math.round(ufo.x);
     sprite(UFO, uc, ur, -58, ufoColor, 0);
@@ -1240,6 +1368,7 @@ function frame(now){
     if (mid) for (let i = 0; i < 6; i++) for (let j = -i; j <= i; j++) if (Math.random() < 0.5) put(uc + 9 + j, ur + 4 + i, -59, ":", "rgba(150,255,210,.5)", 0, 0);
   }
   if (duck.active) drawDuck();
+  drawUnderground();
   if (LEVEL >= 3 || LEVEL >= 11){
     for (let c = 0; c < cols; c++) put(c, groundRow, -30, groundCh[c], LEVEL >= 15 ? "rgba(245,250,255,.85)" : "rgba(230,240,255,.45)", 0, 0);
     const hc = Math.max(0, Math.round((cx - Math.min(scale * 0.62, W * 0.46)) / cw) - 6);
@@ -1288,6 +1417,7 @@ function frame(now){
     let c = (PX / cw) | 0, r = (PY / ch) | 0;
     if (m.kind === "globe" || m.kind === "gift"){                    // 선물·스노우볼은 돌지 않고 땅바닥 제자리에
       c = Math.max(4, Math.min(cols - 5, Math.round((cx + m.gx * groundSpread()) / cw)));
+      if (!(itemDrag && itemDrag.on && itemDrag.m === m)){ const cc = chimneyPos().cc; if (Math.abs(c - cc) < 7) c = (c < cc || cc + 7 > cols - 5) ? cc - 7 : cc + 7; }   // 굴뚝 자리는 비워 둬요
       r = groundRow - 1; PZ = 0.5 + k * 1e-5 + (m._top || 0);
       if (m._hop){                                                    // 클릭하면 통통 튀어요
         const a = t - m._hop;
@@ -2157,7 +2287,7 @@ function renderStreet(){
     box.appendChild(b);
   }
   for (const name of [EVERYONE, ...CONFIG.MEMBERS]){
-    const list = lettersFor(name).filter(m => !m._del), unread = list.filter(m => !r.has(m.id)).length;
+    const list = lettersFor(name).filter(m => !m._del && !m._transit), unread = list.filter(m => !r.has(m.id)).length;
     const b = document.createElement("button");
     b.type = "button";
     b.className = "hut" + (name === EVERYONE ? " hall" : " t" + hutTier(list.length)) + (unread ? " has" : "") + (list.length ? " full" : "") + (hlName === name ? " on" : "");
@@ -2169,7 +2299,9 @@ function renderStreet(){
       pre.appendChild(sp);
     }
     const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = name === EVERYONE ? "🎄 Everyone" : name;
-    b.appendChild(pre); b.appendChild(nm);
+    const pipe = document.createElement("span"); pipe.className = "pipe";   // 땅굴과 집을 잇는 통로
+    b.dataset.name = name;
+    b.appendChild(pipe); b.appendChild(pre); b.appendChild(nm);
     b.onclick = () => knockHut(b, name);
     box.appendChild(b);
   }
@@ -2442,6 +2574,7 @@ $("#form").addEventListener("submit", async e => {
     } else id = "l" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
     const m = prepare(sanitize(id, raw));
     if (photoData && (!DB || PREVIEW)) m.photo = photoData;   // Firebase 없이 쓸 땐 브라우저에 같이 보관
+    m._transit = true;   // 산타가 배달하는 동안은 집에 아직 안 보여요
     msgs.push(m);
     if (!DB && !PREVIEW) saveLocal();
     if (!PREVIEW) localStorage.setItem("mytree.lastPost", String(Date.now()));
@@ -2450,6 +2583,7 @@ $("#form").addEventListener("submit", async e => {
     $("#fText").value = ""; $("#fCount").textContent = "0"; clearPhoto();
     faceTo(m, 4);
     toast(m.kind === "gift" ? "Your gift is under the tree 🎁" : m.kind === "globe" ? "Your snow globe is under the tree ❄️" : "Your ornament is on the tree ✨");
+    deliver(m);
     checkWords(text + " " + raw.name);
   } catch (err){
     console.error(err);
@@ -2842,12 +2976,65 @@ function renderTrashView(){
       sp.style.color = `rgb(${g},${g + 4},${g + 2})`;
       sp.style.opacity = (0.55 + q.z * 0.4).toFixed(2);
       sp.style.fontSize = (10 + q.z * 6 + r() * 3).toFixed(1) + "px";
-      sp.style.transform = `translate(-50%,-50%) translate(${q.x.toFixed(1)}px, ${q.y.toFixed(1)}px) rotate(${(r() * 360).toFixed(0)}deg) scale(${(0.85 + r() * 0.35).toFixed(2)}, ${(0.7 + r() * 0.45).toFixed(2)})`;
+      sp._b = { x: q.x, y: q.y, rot: r() * 360, sx: 0.85 + r() * 0.35, sy: 0.7 + r() * 0.45 };
+      placeBit(sp, 1, 0);
       wad.appendChild(sp);
     }
+    // 계속 두드리면 조금씩 펴지다가, 결국 원래 뭐라고 쓰여 있었는지 보여요
+    const unf = document.createElement("div"); unf.className = "unf";
+    unf.textContent = m.text || "📷 (photo only)";
+    const L = (m.text || "").length; if (L > 28) unf.style.fontSize = L > 55 ? "10px" : "11.5px";   // 긴 편지는 글씨를 조금 작게
+    const sm = document.createElement("small"); sm.textContent = `${m.name ? "from " + m.name : ""}${m.to ? " → " + (m.to === EVERYONE ? "Everyone" : m.to) : ""}`;
+    if (sm.textContent) unf.appendChild(sm);
+    wad.appendChild(unf);
     const cap = document.createElement("span"); cap.className = "cap"; cap.textContent = `${RM_TEXT} · 🚩 ${m._rep}`;
+    wad.onclick = () => rustleWad(wad, cap, m);
     li.appendChild(wad); li.appendChild(cap); ul.appendChild(li);
   }
+}
+function placeBit(sp, spread, jig){
+  const b = sp._b, j = () => (Math.random() - 0.5) * jig;
+  sp.style.transform = `translate(-50%,-50%) translate(${(b.x * spread + j() * 8).toFixed(1)}px, ${(b.y * spread + j() * 8).toFixed(1)}px) rotate(${(b.rot + j() * 70).toFixed(0)}deg) scale(${b.sx.toFixed(2)}, ${b.sy.toFixed(2)})`;
+}
+// 부스럭 소리 (짧은 종이 노이즈)
+let rustleAC = null;
+function rustleSound(n){
+  try {
+    rustleAC = rustleAC || new (window.AudioContext || window.webkitAudioContext)();
+    const ac = rustleAC, len = Math.floor(ac.sampleRate * 0.16), buf = ac.createBuffer(1, len, ac.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++){ const crackle = Math.random() < 0.04 ? 3 : 1; d[i] = (Math.random() * 2 - 1) * crackle * Math.pow(1 - i / len, 2); }
+    const src = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+    src.buffer = buf; f.type = "highpass"; f.frequency.value = 1800 + n * 250; g.gain.value = 0.11;
+    src.connect(f); f.connect(g); g.connect(ac.destination); src.start();
+  } catch(_){}
+}
+const UNFOLD_TAPS = 6;
+function rustleWad(wad, cap, m){
+  clearTimeout(wad._settle);
+  if (wad.classList.contains("open")){          // 펼쳐진 걸 누르면 다시 꾸깃꾸깃
+    wad.classList.remove("open"); wad._n = 0;
+    wad.querySelectorAll(":scope > span").forEach(sp => placeBit(sp, 1, 0));
+    cap.textContent = `${RM_TEXT} · 🚩 ${m._rep}`;
+    rustleSound(0); return;
+  }
+  wad._n = (wad._n || 0) + 1;
+  const n = wad._n;
+  wad.classList.remove("rustle"); void wad.offsetWidth; wad.classList.add("rustle");
+  rustleSound(n);
+  if (n >= UNFOLD_TAPS){
+    wad.querySelectorAll(":scope > span").forEach(sp => placeBit(sp, 2.2, 3));
+    wad.classList.add("open");
+    cap.textContent = "😮 so that's what it said… (tap to crumple)";
+    return;
+  }
+  // 누를수록 뭉치가 조금씩 풀려요
+  wad.querySelectorAll(":scope > span").forEach(sp => placeBit(sp, 1 + n * 0.09, 0.6 + n * 0.25));
+  cap.textContent = ["", "rustle…", "rustle rustle…", "it's loosening…", "almost…", "one more!"][n] || "";
+  // 한동안 안 건드리면 다시 꽉 뭉쳐져요
+  wad._settle = setTimeout(() => {
+    wad._n = 0; wad.querySelectorAll(":scope > span").forEach(sp => placeBit(sp, 1, 0));
+    cap.textContent = `${RM_TEXT} · 🚩 ${m._rep}`;
+  }, 2600);
 }
 function trashCell(){
   const rc2 = $("#trash .bin").getBoundingClientRect();
