@@ -72,7 +72,8 @@
     font:16px var(--kr);padding:10px 12px;outline:none;resize:none}
   .sheet textarea:focus,.sheet input[type=text]:focus{border-color:rgba(140,255,170,.6)}
   .count{text-align:right;font:11px var(--mono);color:#5d7a66;margin-top:4px}
-  .kinds{display:flex;gap:8px}
+  .kinds{display:flex;gap:8px;flex-wrap:wrap}
+  .kinds label{min-width:92px}
   .kinds label{flex:1;margin:0;cursor:pointer}
   .kinds input{display:none}
   .kinds span{display:block;text-align:center;padding:10px;border-radius:10px;border:1px solid rgba(140,255,170,.2);color:#cfe;font-size:14px}
@@ -293,6 +294,11 @@
                repeating-linear-gradient(-58deg, transparent 0 16px, rgba(0,0,0,.07) 16px 17px),
                repeating-linear-gradient(104deg, transparent 0 19px, rgba(255,255,255,.3) 19px 20px)}
   .paper span{display:inline-block;color:#4a4338;opacity:.72;filter:blur(.75px);font:800 13px/1 var(--kr);margin:-1px -2px}
+  .wad{position:relative;width:108px;height:104px;margin:0 auto}
+  .wad::after{content:"";position:absolute;left:14%;right:14%;bottom:-6px;height:12px;border-radius:50%;
+    background:radial-gradient(ellipse at center, rgba(0,0,0,.55), rgba(0,0,0,0) 70%);z-index:-1}
+  .wad span{position:absolute;left:50%;top:50%;white-space:pre;font-weight:800;line-height:1;font-family:var(--kr);
+    text-shadow:0 1px 1px rgba(0,0,0,.55)}
   #trashList .cap{display:block;margin-top:9px;color:#7b8580;font:11px var(--code)}
   #trashList li{padding:9px 10px;margin-bottom:8px;border:1px dashed rgba(255,255,255,.14);border-radius:10px;color:#8b8f94;font:13px/1.6 var(--code);
     filter:grayscale(1);word-break:break-all}
@@ -313,6 +319,22 @@
   #mbList li.removed .rx{filter:none;opacity:1}
   .board li{display:flex;align-items:center;gap:6px}
   .board li button.main{flex:1;min-width:0}
+  /* 이스터에그: 스노우볼 속에 들어간 듯한 유리 구슬 효과 */
+  #globeFx{position:fixed;inset:0;z-index:2;pointer-events:none;opacity:0;
+    background:radial-gradient(circle at 50% 46%, rgba(255,255,255,0) 0, rgba(255,255,255,0) 52%, rgba(190,225,255,.18) 62%, rgba(10,20,40,.88) 72%),
+               radial-gradient(ellipse 18% 10% at 32% 22%, rgba(255,255,255,.35), rgba(255,255,255,0) 70%)}
+  #globeFx.on{animation:globeIn 6.5s ease-in-out forwards}
+  @keyframes globeIn{0%{opacity:0;transform:scale(1.4)}15%{opacity:1;transform:scale(1)}80%{opacity:1}100%{opacity:0;transform:scale(1.15)}}
+  /* 마지막 레벨: HAPPY NEW YEAR! 네온 글씨 */
+  #nyText{position:fixed;left:0;right:0;top:26vh;z-index:3;pointer-events:none;text-align:center;opacity:0;
+    font:clamp(26px,8vw,72px)/1.25 "Press Start 2P", var(--mono);letter-spacing:.04em;
+    background:linear-gradient(90deg,#ffe680,#ff8ae2,#62c6ff,#9dffb0,#ffe680);background-size:300% 100%;
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 0 10px rgba(255,210,120,.75)) drop-shadow(0 0 28px rgba(255,120,200,.45))}
+  #nyText.on{animation:nyPop 5s ease-out forwards, nyFlow 2.5s linear infinite}
+  #nyText .l2{display:block;font-size:.8em;margin-top:.25em}
+  @keyframes nyPop{0%{opacity:0;transform:scale(.3)}12%{opacity:1;transform:scale(1.15)}20%{transform:scale(1)}78%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.06) translateY(-10px)}}
+  @keyframes nyFlow{to{background-position:300% 0}}
 </style>
 </head>
 <body>
@@ -332,6 +354,8 @@
   <button class="chip" id="btnGuide">📜 Guide</button>
 </div>
 
+<div id="globeFx" aria-hidden="true"></div>
+<div id="nyText" aria-hidden="true"><span class="l1">HAPPY</span><span class="l2">NEW YEAR!</span></div>
 <div id="banner"><div class="b1" id="bannerTitle">LEVEL UP!</div><div class="b2" id="bannerSub"></div><div class="b3" id="bannerText"></div></div>
 <div id="greet"><span id="greetText"></span><span class="cur"></span></div>
 <button id="btnAdd">＋ Hang your message</button>
@@ -352,13 +376,15 @@
         <div id="fPhotoPrev" class="hidden"><img id="fPhotoImg" alt="Selected photo"><button type="button" id="fPhotoDel" aria-label="Remove photo">✕</button></div>
       </div>
       <div class="two">
-        <div><label for="fFrom">From</label><select id="fFrom"></select></div>
+        <div><label for="fFrom">From</label><select id="fFrom"></select>
+          <input type="text" id="fFromOther" maxlength="12" placeholder="Your name" class="hidden" style="margin-top:6px"></div>
         <div><label for="fTo">To</label><select id="fTo"></select></div>
       </div>
       <label>Style</label>
       <div class="kinds">
         <label><input type="radio" name="kind" value="ornament" checked><span>🔴 Ornament</span></label>
         <label><input type="radio" name="kind" value="gift"><span>🎁 Gift box</span></label>
+        <label><input type="radio" name="kind" value="globe"><span>🔮 Snow globe</span></label>
       </div>
       <label>Color</label>
       <div class="swatches" id="swatches"></div>
@@ -507,11 +533,11 @@ const LEVELS = [
   { icon:"👻", text:"A ghost in a Santa hat stops by to say hi" },
   { icon:"⭐", text:`The ${CONFIG.STAR_TEXT} star! Golden garland & fireworks` },
   { icon:"🚂", text:"A toy train chugs past the tree" },
+  { icon:"🏙", text:"City lights twinkle on the horizon" },
   { icon:"🏮", text:"Sky lanterns float up into the night" },
   { icon:"🐋", text:"A whale swims across the starry sky" },
   { icon:"❄️", text:"Giant snowflakes start to fall" },
-  { icon:"🌌", text:"The stars spell out 2026 — the tree is complete!" },
-  { icon:"🏙", text:"City lights twinkle on the horizon" },
+  { icon:"🎆", text:"HAPPY NEW YEAR! The tree is complete 🥂" },
 ];
 const MAX_LEVEL = LEVELS.length - 1;
 
@@ -560,6 +586,10 @@ const STAR_ART = ["    *    ","   ***   ","*********"," ******* ","  *****  "," 
 const STAR_CH = "*#@&*";
 const STAR_COL = ["#fff6b0","#ffe066","#ffd23f","#ffc21a"];
 const GIFT_ART = ["  \\_/  ","[==|==]","[##|##]","[##|##]"];
+const GLOBE_ART = ["  .---.  ", " / . ^ \\ ", "| . ^^^ |", " \\_.|._/ ", " [=====] "];
+const GLOBE_ART_S = [" .-. ", "(.^.)", "[===]"];
+const KIND_ICON = { ornament: "🔴", gift: "🎁", globe: "🔮" };
+const kindOf = k => (k === "gift" || k === "globe") ? k : "ornament";
 const ORN_ART = ["  _o_  ", " /'@@\\ ", "(@@@@@)", " \\@@@/ "];
 const ORN_ART_S = ["_o_", "(@)"];   // 모바일(좁은 화면)용 작은 오너먼트
 const SANTA = [
@@ -642,6 +672,7 @@ const FONT = {
   X:"#.##.#.#.#.##.#",
   Y:"#.##.#.#..#..#.",
   Z:"###..#.#.#..###",
+  "!":".#..#..#.....#.",
 };
 function buildLogo(text){
   const rowsOut = ["", "", "", "", ""];
@@ -652,7 +683,7 @@ function buildLogo(text){
   return rowsOut.map(r => r.replace(/\./g, " "));
 }
 const LOGO = buildLogo(CONFIG.STAR_TEXT);
-const CONSTELLATION = buildLogo("2026");
+const NEWYEAR = [buildLogo("HAPPY"), buildLogo("NEW YEAR!")];
 
 /* ---------------- 상태 ---------------- */
 let FILL = "symbol", TEXT_SRC = "MERRYCHRISTMAS";
@@ -668,7 +699,8 @@ let rainbowUntil = 0, swayUntil = 0, discoUntil = 0, blizzardUntil = 0, moonFull
 let sleeping = false, lastInput = 0;
 const spinLog = [], starTaps = [];
 let prevAngle = angle;
-let starHit = null, moonHit = null, catHit = null, wishHit = null;
+let starHit = null, moonHit = null, catHit = null, wishHit = null, globeHit = null;
+let globeFxUntil = 0;
 const bubbles = [];
 
 /* ---------------- 캔버스 / 그리드 ---------------- */
@@ -744,7 +776,13 @@ function proj(x, y, z){
 /* ---------------- 메시지 배치 ---------------- */
 function prepare(m){
   const r = rng(hashStr(m.id));
-  if (m.kind === "gift"){
+  if (m.kind === "globe"){
+    let gx = r() * 2 - 1;
+    if (Math.abs(gx) < 0.22) gx = Math.sign(gx || 1) * (0.22 + r() * 0.2);   // 트리 줄기 바로 앞은 피해서
+    m.gx = gx;
+    const th = r() * TAU;
+    m.x = Math.cos(th) * 0.4; m.z = Math.sin(th) * 0.4; m.y = GIFT_Y; m.theta = th;
+  } else if (m.kind === "gift"){
     const th = r() * TAU, rad = 0.12 + r() * 0.5;
     m.x = Math.cos(th) * rad; m.z = Math.sin(th) * rad; m.y = GIFT_Y; m.theta = th;
   } else {
@@ -792,6 +830,17 @@ function shapeBurst(x, y, name, pal){
     }
   }
 }
+// 마지막 레벨: 커다란 네온 글씨로 HAPPY NEW YEAR! 가 펑 하고 떠올라요 (주변엔 불꽃)
+function showNewYear(){
+  const el = $("#nyText");
+  el.classList.remove("on"); void el.offsetWidth; el.classList.add("on");
+  const r = el.getBoundingClientRect(), cxx = (r.left + r.width / 2) / cw, cyy = (r.top + r.height / 2) / ch;
+  burst(cxx, cyy, 70, FW_COLORS[1], rows * 0.2);
+  setTimeout(() => burst(cxx - cols * 0.25, cyy - 2, 40, FW_COLORS[3], rows * 0.14), 350);
+  setTimeout(() => burst(cxx + cols * 0.25, cyy - 2, 40, FW_COLORS[2], rows * 0.14), 650);
+  if (Music.on) Music.fanfare();
+}
+let nextNY = 3;
 function spawnMeteor(){ parts.push({ meteor: true, x: rand(0.3, 1.1) * cols, y: rand(0, 0.15) * rows, vx: -cols * 0.55, vy: rows * 0.22, life: 0, max: 1.3 }); }
 function spawnZ(x, y){ parts.push({ chr: Math.random() < 0.5 ? "z" : "Z", x, y, vx: rand(0.3, 1.2), vy: -rand(1, 2), life: 0, max: rand(1.6, 2.4), pal: ["#bcd3ff","#e6efff"] }); }
 
@@ -822,8 +871,9 @@ function stepParticles(dt){
     }
     if (p.spill && p.y > groundRow - 1){ p.y = groundRow - 1; p.vy *= -0.3; p.vx *= 0.6; }
     if (p.shape){
+      if (p.life < 0) continue;
       const k = Math.min(1, p.life / 0.55), e = 1 - Math.pow(1 - k, 3);
-      const droop = Math.max(0, p.life - 1.1);
+      const droop = Math.max(0, p.life - (p.hold || 1.1));
       p.x = p.ox + p.tx * e; p.y = p.oy + p.ty * e + droop * droop * 6;
       continue;
     }
@@ -856,6 +906,7 @@ function drawParticles(){
       for (let j = 0; j < 7; j++) put((p.x + j * 2.2) | 0, (p.y - j * 0.9) | 0, -75, j === 0 ? "*" : (j < 3 ? "=" : "-"), j === 0 ? "#ffffff" : `rgba(200,225,255,${((1 - j / 7) * (1 - k)).toFixed(2)})`, 0, 0);
     } else {
       const k = p.life / p.max;
+      if (p.life < 0) continue;
       const chh = p.chr || (p.spark ? (blink ? "*" : "+") : p.shape ? (k < 0.7 ? "@" : k < 0.85 ? "*" : "+") : k < 0.25 ? "@" : k < 0.5 ? "*" : k < 0.75 ? "+" : ".");
       put(p.x | 0, p.y | 0, (p.chr || p.front) ? 0.97 : -65, chh, k < 0.35 ? p.pal[1] : p.pal[0], 0, 0);
     }
@@ -889,18 +940,20 @@ function stepExtras(dt){
     if (train.x > cols + 2){ if (t > train.nextAt) train.x = -TRAIN[0].length; }
     else { train.x += dt * 9; if (train.x > cols + 2) train.nextAt = t + rand(8, 16); }
   }
-  // 레벨 12: 풍등이 하늘로 올라가요
-  if (LEVEL >= 12 && t > nextLantern){
+  // 레벨 13: 풍등이 하늘로 올라가요
+  if (LEVEL >= 13 && t > nextLantern){
     nextLantern = t + rand(1.6, 3.2);
     parts.push({ lantern: true, x: rand(0.05, 0.95) * cols, y: groundRow - 1, vx: rand(-0.4, 0.4), vy: -rand(1.6, 2.6), life: 0, max: 30, ph: rand(0, TAU) });
   }
-  // 레벨 13: 고래가 밤하늘을 헤엄쳐요
-  if (LEVEL >= 13){
+  // 레벨 14: 고래가 밤하늘을 헤엄쳐요
+  if (LEVEL >= 14){
     if (!whale.active && t > whale.nextAt){ whale.active = true; whale.x = cols + 2; }
     if (whale.active){ whale.x -= dt * cols / 26; if (whale.x < -24){ whale.active = false; whale.nextAt = t + rand(30, 50); } }
   }
-  // 레벨 14: 커다란 눈송이
-  if (LEVEL >= 14 && flakes.length < 7 && Math.random() < dt * 0.8) flakes.push({ x: rand(0, cols), y: -3, v: rand(1.2, 2.4), sw: rand(0, TAU) });
+  // 레벨 16: HAPPY NEW YEAR! 글자 불꽃
+  if (LEVEL >= 16 && t > nextNY && !document.hidden){ showNewYear(); nextNY = t + 15; }
+  // 레벨 15: 커다란 눈송이
+  if (LEVEL >= 15 && flakes.length < 7 && Math.random() < dt * 0.8) flakes.push({ x: rand(0, cols), y: -3, v: rand(1.2, 2.4), sw: rand(0, TAU) });
   for (let i = flakes.length - 1; i >= 0; i--){
     const f = flakes[i]; f.y += f.v * dt; f.x += Math.sin(t + f.sw) * dt * 1.5;
     if (f.y > groundRow) flakes.splice(i, 1);
@@ -936,17 +989,30 @@ function drawCity(){
     if (Math.sin(t * 3) > 0) put(ax, ay - 2, -92, "*", "#ff4d5e", 0, 1);
   }
 }
-function drawExtras(){
-  if (LEVEL >= 16) drawCity();
-  // 레벨 15: 별자리로 2026
-  if (LEVEL >= 15){
-    const art = CONSTELLATION, c0 = Math.max(2, Math.round(cols * 0.06)), r0 = Math.round(rows * 0.36);
-    for (let r = 0; r < art.length; r++) for (let c = 0; c < art[r].length; c++){
-      if (art[r][c] === " ") continue;
-      const tw = Math.sin(t * 2 + r * 1.3 + c * 0.7);
-      put(c0 + c * 2, r0 + r, -84, tw > 0.3 ? "*" : "+", tw > 0.3 ? "#fff6d0" : "rgba(255,240,190,.75)", 0, tw > 0.3 ? 1 : 0);
-    }
+// 바닥 한쪽에 놓인 작은 황금 스노우볼 (편지가 아니라 숨겨진 이스터에그)
+const SECRET_GLOBE = [" .-. ", "(*^*)", "[###]"];
+function drawSecretGlobe(){
+  const c0 = Math.max(1, Math.round((cx - Math.min(W * 0.47, scale * 0.86)) / cw)) , r0 = groundRow - 3;
+  const tw = (t * 2 | 0) % 2;
+  for (let gr = 0; gr < 3; gr++) for (let gc = 0; gc < 5; gc++){
+    let chh = SECRET_GLOBE[gr][gc]; if (chh === " ") continue;
+    let col = gr === 2 ? "#ffd34d" : chh === "^" ? "#4fd18b" : chh === "*" ? (tw ? "#ffffff" : "#fff3b0") : "#e8f4ff";
+    if (chh === "*" && gc === (tw ? 1 : 3)) chh = ".";
+    put(c0 + gc, r0 + gr, 0.55, chh, col, 0, gr === 2 ? 1 : 0);
   }
+  globeHit = { x: (c0 + 2.5) * cw, y: (r0 + 1.5) * ch, r: Math.max(18, cw * 3.5) };
+}
+function shakeSecretGlobe(){
+  globeFxUntil = t + 6.5;
+  const el = $("#globeFx"); el.classList.remove("on"); void el.offsetWidth; el.classList.add("on");
+  blizzardUntil = t + 6.5;
+  for (let i = 0; i < 12; i++) flakes.push({ x: rand(0, cols), y: rand(-rows * 0.5, -2), v: rand(2, 4), sw: rand(0, TAU) });
+  for (let i = 0; i < 120; i++) parts.push({ chr: Math.random() < 0.5 ? "*" : ".", x: rand(0, cols), y: rand(-rows * 0.6, rows * 0.3), vx: rand(-5, 5), vy: rand(2, 7), life: 0, max: rand(3, 6.5), pal: ["#ffffff", "#e6f2ff"], g: 0.4, front: true });
+  egg("globe", "🔮 You're inside the snow globe now! ❄️");
+}
+
+function drawExtras(){
+  if (LEVEL >= 12) drawCity();
   for (const f of flakes) sprite(FLAKE, Math.round(f.x), Math.round(f.y), -40, () => "rgba(235,245,255,.85)", 0);
   if (whale.active) sprite(WHALE, Math.round(whale.x), Math.round(rows * 0.2 + Math.sin(t * 0.8) * 1.5), -70, whaleColor, 0);
   if (LEVEL >= 11 && train.x <= cols + 2) sprite(TRAIN, Math.round(train.x), groundRow - 3, 0.86, trainColor, 0);
@@ -1138,6 +1204,7 @@ function frame(now){
   }
   drawParticles();
   drawExtras();
+  drawSecretGlobe();
   drawPhotoArts();
   if (santa.active) sprite(SANTA, Math.round(santa.x), Math.round(rows * 0.13 + Math.sin(t * 2.2) * 1.2), -55, santaColor, 0);
   if (ufo.active){
@@ -1148,7 +1215,7 @@ function frame(now){
   }
   if (duck.active) drawDuck();
   if (LEVEL >= 3 || LEVEL >= 11){
-    for (let c = 0; c < cols; c++) put(c, groundRow, -30, groundCh[c], LEVEL >= 14 ? "rgba(245,250,255,.85)" : "rgba(230,240,255,.45)", 0, 0);
+    for (let c = 0; c < cols; c++) put(c, groundRow, -30, groundCh[c], LEVEL >= 15 ? "rgba(245,250,255,.85)" : "rgba(230,240,255,.45)", 0, 0);
     const hc = Math.max(0, Math.round((cx - Math.min(scale * 0.62, W * 0.46)) / cw) - 6);
     const art = HOUSE.slice();
     art[0] = "     " + ["( )  ", " ( ) ", "  ( )"][(t * 1.5 | 0) % 3] + "       ";
@@ -1171,7 +1238,7 @@ function frame(now){
     if (p.trunk){ col = TRUNK[(b * 7.99) | 0]; if (FILL === "symbol") chr = p.n < 0.5 ? "|" : "#"; }
     else if (p.light){
       const on = disco ? Math.random() < 0.6 : !sleeping && Math.sin(t * 2.6 + p.ph) > -0.1;
-      col = on ? (disco ? pick(LIGHT_ON) : LEVEL >= 15 ? RAINBOW[((p.lc * 4 + p.y * 40 + t * 10) | 0) % 24][7] : LIGHT_ON[p.lc]) : LIGHT_OFF[p.lc];
+      col = on ? (disco ? pick(LIGHT_ON) : LEVEL >= 16 ? RAINBOW[((p.lc * 4 + p.y * 40 + t * 10) | 0) % 24][7] : LIGHT_ON[p.lc]) : LIGHT_OFF[p.lc];
       if (FILL === "symbol") chr = on ? "o" : ".";
     } else if (rainbow || disco){
       col = RAINBOW[((p.y * 30 + t * (disco ? 40 : 14) + p.n * 3) | 0) % 24][(b * 7.99) | 0];
@@ -1192,14 +1259,36 @@ function frame(now){
     const m = msgs[k];
     if (m._del){ m._c = -1; continue; }   // 삭제된 편지는 트리에서 빠지고 쓰레기통으로
     proj(m.x, m.y, m.z);
-    const c = (PX / cw) | 0, r = (PY / ch) | 0;
+    let c = (PX / cw) | 0, r = (PY / ch) | 0;
+    if (m.kind === "gift") r = groundRow - 1;                       // 선물은 땅바닥에 딱 붙어서 (트리와 함께 빙글)
+    if (m.kind === "globe"){                                          // 스노우볼은 돌지 않고 제자리에
+      const spread = Math.min(W * 0.46, scale * 0.78);
+      c = Math.round((cx + m.gx * spread) / cw); r = groundRow - 1; PZ = 0.5;
+    }
     const mine = !!hlName && (hlName === EVERYONE ? isForAll(m) : m.to === hlName), dim = !!hlName && !mine;
     const hl = !!(focus && focus.id === m.id) || (mine && Math.sin(t * 4 + k) > 0.55);
     const unreadMine = mine && unreadIds.has(m.id);
     m._mine = mine; m._dim = dim; m._unread = unreadMine;
     if (unreadMine && Math.random() < 0.09) parts.push({ x: c + rand(-4, 4), y: r + rand(-3, 2), vx: rand(-0.5, 0.5), vy: -rand(0.8, 2), life: 0, max: rand(0.6, 1.1), pal: ["#ffffff", "#ffe680"], spark: true, front: true });
     else if (mine && Math.random() < 0.06) parts.push({ x: c + rand(-4, 4), y: r + rand(-3, 2), vx: rand(-0.5, 0.5), vy: -rand(0.8, 2), life: 0, max: rand(0.6, 1.1), pal: ["#fff6c2", "#ffe680"], spark: true, front: true });
-    if (m.kind === "gift"){
+    if (m.kind === "globe"){
+      // 스노우볼: 유리 돔 안에 작은 트리, 눈이 반짝반짝 흩날려요
+      const small = W < 600, GA = small ? GLOBE_ART_S : GLOBE_ART, gw = GA[0].length, gh = GA.length;
+      const z = PZ + 0.025, c0 = c - (gw >> 1), r0 = r - gh + 1;
+      const snowT = (t * 3 + k) | 0;
+      for (let gr = 0; gr < gh; gr++) for (let gc = 0; gc < gw; gc++){
+        let chh = GA[gr][gc]; if (chh === " ") continue;
+        let col;
+        const base = gr === gh - 1;
+        if (dim) col = base ? "#4a4636" : "#33403a";
+        else if (base) col = hl && blink ? "#ffffff" : m.col;
+        else if (chh === "^") col = "#4fd18b";
+        else if (chh === "." && gr > 0 && gr < gh - 1){ chh = ((gc * 7 + gr * 3 + snowT) % 4) ? "." : "*"; col = "#ffffff"; }
+        else col = hl && blink ? "#ffffff" : "#bfe6ff";
+        put(c0 + gc, r0 + gr, z, chh, col, k + 1, dim ? 0 : 1);
+      }
+      m._c = c; m._r = r - 1; m._px = (c + 0.5) * cw; m._py = (r - 0.5) * ch;
+    } else if (m.kind === "gift"){
       const z = PZ + 0.02, c0 = c - 3, r0 = r - 3, body = dim ? "#2f3a34" : hl && blink ? "#ffffff" : m.col;
       for (let gr = 0; gr < 4; gr++) for (let gc = 0; gc < 7; gc++){
         const chh = GIFT_ART[gr][gc]; if (chh === " ") continue;
@@ -1305,7 +1394,7 @@ function frame(now){
     hits.push({ x: m._px, y: m._py, k, r: Math.max(22, cw * 4) });
     if (m._dim) continue;
     const boost = m._mine ? 1.7 : 1;
-    const rad = Math.max(W < 600 ? 8 : 14, fs * (m.kind === "gift" ? 4 : (W < 600 ? 1.9 : 3.8))) * boost, hg = ctx.createRadialGradient(m._px, m._py, 0, m._px, m._py, rad);
+    const rad = Math.max(W < 600 ? 8 : 14, fs * (m.kind !== "ornament" ? 4 : (W < 600 ? 1.9 : 3.8))) * boost, hg = ctx.createRadialGradient(m._px, m._py, 0, m._px, m._py, rad);
     hg.addColorStop(0, (boost > 1 ? "#ffe680" : m.col) + (boost > 1 ? "90" : "78")); hg.addColorStop(1, m.col + "00");
     ctx.globalAlpha = 0.75 + 0.25 * Math.sin(t * 3 + k);
     ctx.fillStyle = hg; ctx.fillRect(m._px - rad, m._py - rad, rad * 2, rad * 2);
@@ -1356,7 +1445,7 @@ function celebrate(m){
     m > MAX_LEVEL ? `🎉 ${n} decorations! Celebration fireworks` : `${info.icon} ${info.text}`);
   proj(0, 0, 0);
   burst(PX / cw, PY / ch, 70, FW_COLORS[1], rows * 0.14);
-  const first = { 2: () => nextMeteor = t + 0.8, 4: () => summon("cat"), 5: () => summon("santa"), 7: () => summon("duck"), 8: () => summon("ufo"), 9: () => summon("ghost"), 11: () => { train.x = -TRAIN[0].length; }, 12: () => { nextLantern = t; }, 13: () => { whale.active = true; whale.x = cols + 2; } };
+  const first = { 2: () => nextMeteor = t + 0.8, 4: () => summon("cat"), 5: () => summon("santa"), 7: () => summon("duck"), 8: () => summon("ufo"), 9: () => summon("ghost"), 11: () => { train.x = -TRAIN[0].length; }, 13: () => { nextLantern = t; }, 14: () => { whale.active = true; whale.x = cols + 2; }, 16: () => { nextNY = t + 1.2; for (const s of ["heart", "star", "smile", "snowflake", "tree"]) setTimeout(() => launchRocket(s), 2500 + Math.random() * 3000); } };
   if (first[m]) first[m]();
   if (m >= 10){ showRockets += m > MAX_LEVEL ? 14 : 10; nextShowRocket = t + 0.6; setTimeout(() => launchRocket("heart"), 900); setTimeout(() => launchRocket("star"), 1700); }
   Music.fanfare();
@@ -1378,13 +1467,14 @@ const EGGS = [
   ["cookie", "🍪", "Cookie Friend",  "Tap the tree trunk — someone is hiding behind it."],
   ["shake",  "📳", "Snow Globe",     "On a phone, shake it hard."],
   ["float",  "💖", "Number One Fan", "Tap a floating best letter 5 times, fast."],
+  ["globe",  "🔮", "Inside the Globe", "Find the little golden snow globe on the ground and tap it."],
 ];
 const EGG_TOTAL = EGGS.length;
 const EGG_HINTS = {
   spin: "Spin the tree round and round?", star: "Poke the star a few times?", moon: "Touch the moon?",
   cat: "Bother a napping cat?", sleep: "Leave the tree alone for a while?", konami: "↑ ↑ ↓ ↓ ← → ← → B A?",
   word: "A magic word in your message?", xmas: "Come back on Christmas?",
-  mail: "Knock on a mailbox again and again?", wish: "One star in the sky looks a little different?", trash: "Tap the trash can again and again?", cookie: "Someone is hiding behind the tree trunk?", shake: "What if the whole screen were a snow globe?", float: "Cheer for a floating letter again and again?",
+  mail: "Knock on a mailbox again and again?", wish: "One star in the sky looks a little different?", trash: "Tap the trash can again and again?", cookie: "Someone is hiding behind the tree trunk?", shake: "What if the whole screen were a snow globe?", float: "Cheer for a floating letter again and again?", globe: "One snow globe on the ground isn't a letter…",
 };
 let eggListOpen = false;
 // 이스터에그는 모두가 공유해요: 누군가 찾으면 Firebase /eggs 에 기록되고 모두의 카운트가 올라가요
@@ -1493,23 +1583,25 @@ $("#gEggTog").onclick = () => { eggListOpen = !eggListOpen; renderGuide(); };
 /* ---------------- HUD ---------------- */
 function updateHud(){
   const deg = ((angle * 180 / Math.PI) % 360 + 360) % 360;
-  const orn = msgs.filter(m => m.kind !== "gift").length, gifts = msgs.length - orn;
+  const orn = msgs.filter(m => m.kind === "ornament").length, gifts = msgs.filter(m => m.kind === "gift").length, globes = msgs.length - orn - gifts;
   const nextN = CONFIG.PER_LEVEL - (msgs.length % CONFIG.PER_LEVEL);
   $("#hud").innerHTML =
-    `<span class="t">@my.tree</span>\nrotation  ${deg.toFixed(2)}°\nlights    ${LIGHT_COUNT}\nletters   ${lettersDrawn.toLocaleString()}\nwishes    ${msgs.length}  (🔴${orn} 🎁${gifts})\n` +
+    `<span class="t">@my.tree</span>\nrotation  ${deg.toFixed(2)}°\nlights    ${LIGHT_COUNT}\nletters   ${lettersDrawn.toLocaleString()}\nwishes    ${msgs.length}  (🔴${orn} 🎁${gifts} 🔮${globes})\n` +
     `<span class="lv">level     ${LEVEL}/${MAX_LEVEL}${LEVEL >= MAX_LEVEL ? " MAX" : ""}\nnext 🎉   +${nextN}\neggs 🥚   ${eggs.size}/${EGG_TOTAL}</span>`;
 }
 
 /* ---------------- 인사말 타이핑 ---------------- */
 (function typer(){
   const el = $("#greetText");
-  let i = 0, dir = 1;
+  let i = 0, dir = 1, phrase = 0;
   (function step(){
-    const full = sleeping ? "zzz..." : CONFIG.GREET;
+    const phrases = LEVEL >= MAX_LEVEL ? [CONFIG.GREET, "HAPPY NEW YEAR!"] : [CONFIG.GREET];
+    if (phrase >= phrases.length) phrase = 0;
+    const full = sleeping ? "zzz..." : phrases[phrase];
     if (i > full.length) i = full.length;
     i += dir; el.textContent = full.slice(0, Math.max(0, i));
     let wait = dir > 0 ? 130 : 45;
-    if (i >= full.length){ dir = -1; wait = 3200; } else if (i <= 0){ dir = 1; wait = 700; }
+    if (i >= full.length){ dir = -1; wait = 3200; } else if (i <= 0){ dir = 1; wait = 700; phrase++; }
     setTimeout(step, wait);
   })();
 })();
@@ -1762,7 +1854,7 @@ cv.addEventListener("pointermove", e => {
   } else {
     const fh = e.pointerType === "mouse" ? floatAt(e.clientX, e.clientY) : null;
     setHoverFloat(fh);
-    cv.classList.toggle("hover", !fh && !!(hitTest(e.clientX, e.clientY) || near(starHit, e) || near(moonHit, e) || near(catHit, e) || near(wishHit, e)));
+    cv.classList.toggle("hover", !fh && !!(hitTest(e.clientX, e.clientY) || near(starHit, e) || near(moonHit, e) || near(catHit, e) || near(wishHit, e) || near(globeHit, e)));
   }
 });
 const near = (h, e) => h && Math.hypot(h.x - e.clientX, h.y - e.clientY) < h.r;
@@ -1779,6 +1871,7 @@ function endDrag(e){
     egg("cookie", "🍪 A cookie friend peeked out from behind the tree!");
     return;
   }
+  if (globeHit && Math.abs(globeHit.x - e.clientX) < Math.max(14, cw * 3) && Math.abs(globeHit.y - e.clientY) < Math.max(14, ch * 2)){ shakeSecretGlobe(); return; }
   const h = hitTest(e.clientX, e.clientY);
   if (h){ openCard(msgs[h.k]); return; }
   if (near(starHit, e)){
@@ -1829,9 +1922,12 @@ function faceTo(m, sec){ focus = { id: m.id, target: m.theta - Math.PI / 2, unti
 function openCard(m){
   currentId = m.id;
   faceTo(m, 6);
-  $("#cIcon").textContent = m.kind === "gift" ? "🎁" : "🔴";
+  $("#cIcon").textContent = KIND_ICON[kindOf(m.kind)];
   $("#cIcon").style.filter = `drop-shadow(0 0 10px ${m.col})`;
-  $("#cHead").textContent = m.kind === "gift" ? "// gift.open()" : "// ornament.read()";
+  $("#cHead").textContent = m.kind === "gift" ? "// gift.open()" : m.kind === "globe" ? "// snowglobe.shake()" : "// ornament.read()";
+  if (m.kind === "globe" && !m._del){   // 스노우볼을 열면 화면에 눈이 살짝 흩날려요
+    for (let i = 0; i < 40; i++) parts.push({ chr: Math.random() < 0.5 ? "*" : ".", x: rand(0, cols), y: rand(-rows * 0.3, 0), vx: rand(-2, 2), vy: rand(3, 7), life: 0, max: rand(2, 4), pal: ["#ffffff", "#dfefff"], g: 0.5, front: true });
+  }
   $("#cMsg").textContent = m.text;
   $("#cMsg").classList.toggle("hidden", !m.text);
   showCardPhoto(m);
@@ -2033,7 +2129,7 @@ function renderMailbox(){
   for (const m of list){
     const li = document.createElement("li"); li.className = m._del ? "removed" : r.has(m.id) ? "" : "unread";
     li.innerHTML = '<button type="button"><span class="ic"></span><span class="body"><span class="top"></span><span class="pv"></span><span class="dt"></span></span></button>';
-    li.querySelector(".ic").textContent = m.kind === "gift" ? "🎁" : "🔴";
+    li.querySelector(".ic").textContent = KIND_ICON[kindOf(m.kind)];
     li.querySelector(".ic").style.filter = `drop-shadow(0 0 6px ${m.col})`;
     const top = li.querySelector(".top");
     if (!m._del && !r.has(m.id)){ const n = document.createElement("span"); n.className = "new"; n.textContent = "NEW · "; top.appendChild(n); }
@@ -2128,8 +2224,20 @@ $("#fNote").textContent = PREVIEW ? "Preview mode — nothing will be saved."
   : DB ? "Everyone visiting this tree can see your message. Every 10 decorations unlock a new surprise!"
   : "No shared storage is set up yet, so messages are saved in this browser only.";
 $("#fText").addEventListener("input", e => { $("#fCount").textContent = e.target.value.length; });
-fillMemberSelect($("#fFrom"), ["Anonymous", "Anonymous 🤫"], localStorage.getItem("mytree.from") || "Anonymous");
-$("#fFrom").onchange = e => { try { localStorage.setItem("mytree.from", e.target.value); } catch(_){} };
+// From: 멤버 중에 고르거나, 목록에 없으면 "Someone else"를 골라 이름을 직접 써요 (익명 없음)
+const OTHER = "__other__";
+fillMemberSelect($("#fFrom"), ["", "— who are you? —"], "");
+{ const o = document.createElement("option"); o.value = OTHER; o.textContent = "✏️ Someone else…"; $("#fFrom").appendChild(o); }
+(function restoreFrom(){
+  const saved = localStorage.getItem("mytree.from") || "";
+  if (CONFIG.MEMBERS.includes(saved)) $("#fFrom").value = saved;
+  else if (saved && saved !== "Anonymous"){ $("#fFrom").value = OTHER; $("#fFromOther").value = saved; $("#fFromOther").classList.remove("hidden"); }
+})();
+$("#fFrom").onchange = e => {
+  const other = e.target.value === OTHER;
+  $("#fFromOther").classList.toggle("hidden", !other);
+  if (other) setTimeout(() => $("#fFromOther").focus(), 30);
+};
 fillMemberSelect($("#fTo"), ["", "🎄 Everyone"], "");
 $("#btnAdd").onclick = () => { $("#modal").classList.remove("hidden"); setTimeout(() => $("#fText").focus(), 50); };
 document.querySelectorAll(".overlay").forEach(ov => {
@@ -2215,15 +2323,22 @@ $("#form").addEventListener("submit", async e => {
   e.preventDefault();
   const text = $("#fText").value.trim().slice(0, CONFIG.MAX_TEXT);
   if (!text && !photoData){ toast("Write a message or add a photo ✍️📷"); return; }
+  const fromName = ($("#fFrom").value === OTHER ? $("#fFromOther").value.trim() : $("#fFrom").value).slice(0, CONFIG.MAX_NAME);
+  if (!fromName){
+    toast($("#fFrom").value === OTHER ? "Please write your name ✏️" : "Please choose who you are 🙋");
+    ($("#fFrom").value === OTHER ? $("#fFromOther") : $("#fFrom")).focus();
+    return;
+  }
+  try { localStorage.setItem("mytree.from", fromName); } catch(_){}
   if (!PREVIEW){
     const wait = CONFIG.COOLDOWN_SEC - (Date.now() - +(localStorage.getItem("mytree.lastPost") || 0)) / 1000;
     if (wait > 0){ toast(`You can hang another one in ${Math.ceil(wait)}s`); return; }
   }
   const raw = {
-    name: ($("#fFrom").value || "Anonymous").slice(0, CONFIG.MAX_NAME),
+    name: fromName,
     to: CONFIG.MEMBERS.includes($("#fTo").value) ? $("#fTo").value : "",
     text,
-    kind: document.querySelector('input[name="kind"]:checked').value === "gift" ? "gift" : "ornament",
+    kind: kindOf(document.querySelector('input[name="kind"]:checked').value),
     color: selColor,
     t: Date.now(),
   };
@@ -2251,7 +2366,7 @@ $("#form").addEventListener("submit", async e => {
     $("#modal").classList.add("hidden");
     $("#fText").value = ""; $("#fCount").textContent = "0"; clearPhoto();
     faceTo(m, 4);
-    toast(m.kind === "gift" ? "Your gift is under the tree 🎁" : "Your ornament is on the tree ✨");
+    toast(m.kind === "gift" ? "Your gift is under the tree 🎁" : m.kind === "globe" ? "Your snow globe is under the tree ❄️" : "Your ornament is on the tree ✨");
     checkWords(text + " " + raw.name);
   } catch (err){
     console.error(err);
@@ -2323,7 +2438,7 @@ function renderReact(m){
   } else if ($("#cMsg").textContent !== m.text){
     // 신고가 취소돼서 복구된 경우: 원래 내용으로 되돌려요
     $("#cMsg").textContent = m.text;
-    $("#cIcon").textContent = m.kind === "gift" ? "🎁" : "🔴";
+    $("#cIcon").textContent = KIND_ICON[kindOf(m.kind)];
     $("#cIcon").style.filter = `drop-shadow(0 0 10px ${m.col})`;
     if (m.p && !$("#cPhotoWrap").children.length) showCardPhoto(m);
   }
@@ -2623,21 +2738,31 @@ function renderTrashView(){
   for (const m of del){
     const r = rng(hashStr(m.id));
     const li = document.createElement("li"); li.className = "ball";
-    const paper = document.createElement("div"); paper.className = "paper";
-    const pct = () => (38 + r() * 24).toFixed(0) + "%";
-    paper.style.setProperty("--br", `${pct()} ${pct()} ${pct()} ${pct()} / ${pct()} ${pct()} ${pct()} ${pct()}`);
-    paper.style.setProperty("--rot", (r() * 40 - 20).toFixed(1) + "deg");
-    // 구겨져서 뭉개진 글자들: 섞고, 기울이고, 번지게
-    const chars = [...(m.text || "📷")].filter(ch => ch.trim());
-    for (let i = chars.length - 1; i > 0; i--){ const j = (r() * (i + 1)) | 0; [chars[i], chars[j]] = [chars[j], chars[i]]; }
-    for (const chh of chars.slice(0, 18)){
+    // 편지 글자들을 꾸깃꾸깃 뭉쳐서 만든 공: 가운데(앞쪽) 글자는 크고 밝게, 가장자리는 작고 어둡게
+    const wad = document.createElement("div"); wad.className = "wad";
+    wad.style.setProperty("--rot", (r() * 360).toFixed(0) + "deg");
+    const src = [...(m.text || "📷 photo")].filter(ch => ch.trim());
+    const N = 95, R = 46, bits = [];
+    for (let i = 0; i < N; i++){
+      const rr = Math.sqrt(r()) * R, th = r() * TAU;
+      const x = Math.cos(th) * rr, y = Math.sin(th) * rr * 0.96;
+      const z = Math.sqrt(Math.max(0, 1 - (rr / R) ** 2));            // 공의 앞쪽일수록 1
+      const lit = Math.max(0, (-0.55 * x - 0.65 * y) / R);              // 왼쪽 위에서 빛
+      bits.push({ x, y, z, lit, ch: src[i % src.length] });
+    }
+    bits.sort((a, b) => a.z - b.z);                                     // 뒤쪽 글자부터 깔아서 앞 글자가 위로
+    for (const q of bits){
       const sp = document.createElement("span");
-      sp.textContent = r() < 0.25 ? "░" : chh;
-      sp.style.transform = `rotate(${(r() * 120 - 60).toFixed(0)}deg) translate(${(r() * 6 - 3).toFixed(1)}px, ${(r() * 6 - 3).toFixed(1)}px) scale(${(0.7 + r() * 0.7).toFixed(2)}, ${(0.6 + r() * 0.6).toFixed(2)})`;
-      paper.appendChild(sp);
+      sp.textContent = q.ch;
+      const L = Math.round(70 + (q.z * 0.6 + q.lit * 0.5) * 160);       // 70~255 회색 명암
+      sp.style.color = `rgb(${Math.min(255, L + 8)},${Math.min(255, L + 4)},${L})`;
+      sp.style.fontSize = (8 + q.z * 11).toFixed(1) + "px";
+      sp.style.transform = `translate(-50%,-50%) translate(${q.x.toFixed(1)}px, ${q.y.toFixed(1)}px) rotate(${(r() * 360).toFixed(0)}deg) scale(${(0.8 + r() * 0.5).toFixed(2)}, ${(0.55 + r() * 0.6).toFixed(2)})`;
+      if (q.z < 0.35) sp.style.filter = "blur(.6px)";
+      wad.appendChild(sp);
     }
     const cap = document.createElement("span"); cap.className = "cap"; cap.textContent = `${RM_TEXT} · 🚩 ${m._rep}`;
-    li.appendChild(paper); li.appendChild(cap); ul.appendChild(li);
+    li.appendChild(wad); li.appendChild(cap); ul.appendChild(li);
   }
 }
 function trashCell(){
@@ -2688,7 +2813,7 @@ function sanitize(id, m){
   const text = String(m.text || "").slice(0, CONFIG.MAX_TEXT).trim();
   if (!text && m.p !== true) return null;   // 글이 없어도 사진이 있으면 OK
   return { id: String(id), name: String(CONFIG.RENAMED[m.name] || m.name || "Anonymous").slice(0, CONFIG.MAX_NAME), text,
-    kind: m.kind === "gift" ? "gift" : "ornament",
+    kind: kindOf(m.kind),
     color: Object.prototype.hasOwnProperty.call(COLORS, m.color) ? m.color : "red", t: Number(m.t) || 0, p: m.p === true,
     to: String(CONFIG.RENAMED[m.to] || m.to || "").slice(0, CONFIG.MAX_NAME) };   // 받는이는 지우지 않고 그대로 보존
 }
@@ -2725,7 +2850,7 @@ function makePreview(n){
   const words = ["Merry Christmas!", "Happy holidays 🎄", "Thanks for this year", "Warm wishes", "Happy New Year!", "Dear Santa, gifts please"];
   const keys = Object.keys(COLORS);
   msgs = Array.from({ length: n }, (_, i) => prepare({ id: "p" + i, name: "friend" + (i + 1), text: words[i % words.length],
-    kind: i % 3 === 2 ? "gift" : "ornament", color: keys[i % keys.length], t: Date.now() - (n - i) * 60000,
+    kind: i % 5 === 4 ? "globe" : i % 3 === 2 ? "gift" : "ornament", color: keys[i % keys.length], t: Date.now() - (n - i) * 60000,
     to: i % 4 === 0 ? "" : CONFIG.MEMBERS[i % CONFIG.MEMBERS.length] }));
   // 미리보기용 가짜 반응 (몇 개는 좋아요, 하나는 신고 3개로 쓰레기통행)
   reactions = {};
