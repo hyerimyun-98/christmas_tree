@@ -1085,6 +1085,10 @@ async function loadEggs(){
     const res = await fetch(`${DB}/eggs.json`, { cache: "no-store" });
     if (!res.ok) return;
     const data = (await res.json()) || {};
+    // 예전에 저장이 막혔던 내 브라우저의 기록을 Firebase에 다시 올려서 공유
+    for (const id of localEggs){
+      if (EGG_IDS.has(id) && !data[id]) fetch(`${DB}/eggs/${id}.json`, { method: "PUT", body: JSON.stringify({ t: Date.now() }) }).catch(() => {});
+    }
     const next = new Set([...Object.keys(data), ...localEggs].filter(id => EGG_IDS.has(id)));
     const gained = next.size - eggs.size;
     if (eggsLoaded && gained > 0) toast(`🥚 Someone just found a new easter egg! (${next.size}/${EGG_TOTAL})`, 3400);
