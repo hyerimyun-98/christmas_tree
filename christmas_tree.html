@@ -1,0 +1,1714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>my.tree — a code-drawn Christmas tree you decorate with messages 🎄</title>
+<meta name="description" content="Leave a message and it becomes an ornament or a gift on the tree. Every 10 decorations unlock a new surprise!">
+<meta property="og:title" content="my.tree — decorate a code-drawn Christmas tree 🎄">
+<meta property="og:description" content="Leave a message and it becomes an ornament or a gift on the tree. Every 10 decorations unlock a new surprise!">
+<meta name="theme-color" content="#05070d">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Nanum+Gothic+Coding:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --kr: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", "Malgun Gothic", sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+    --code: "JetBrains Mono", "Nanum Gothic Coding", "D2Coding", ui-monospace, monospace;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;overflow:hidden;background:#04060b;color:#e8fff0;font-family:var(--kr)}
+  body{background:radial-gradient(ellipse at 50% 40%, #0b1a14 0%, #060a10 55%, #03050a 100%)}
+  body.night{background:radial-gradient(ellipse at 20% 10%, #16284a 0%, #0a1226 45%, #05060f 100%)}
+  canvas{position:fixed;inset:0;display:block;touch-action:none;cursor:grab}
+  canvas.drag{cursor:grabbing}
+  canvas.hover{cursor:pointer}
+
+  #hud{position:fixed;top:calc(12px + env(safe-area-inset-top));left:14px;font:12px/1.55 var(--mono);
+    color:rgba(200,255,215,.72);pointer-events:none;text-shadow:0 0 6px rgba(80,255,140,.35);white-space:pre}
+  #hud .t{color:#fff;font-weight:700}
+  #hud .lv{color:#ffe680}
+  #topbar{position:fixed;top:calc(12px + env(safe-area-inset-top));right:12px;display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+  .chip{font:12px var(--mono);color:#d8ffe0;background:rgba(10,22,16,.62);border:1px solid rgba(160,255,190,.25);
+    border-radius:999px;padding:7px 12px;cursor:pointer;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);white-space:nowrap}
+  .chip:hover{border-color:rgba(160,255,190,.6)}
+  .chip.on{border-color:#ffe680;color:#fff3b0}
+
+  #greet{position:fixed;left:0;right:0;bottom:calc(84px + env(safe-area-inset-bottom));text-align:center;
+    font-family:"Press Start 2P", var(--mono);font-size:clamp(15px,4.4vw,30px);color:#ffe680;letter-spacing:.04em;
+    text-shadow:0 0 6px #ffcc33,0 0 18px rgba(255,200,50,.55);pointer-events:none;min-height:1.3em;white-space:nowrap}
+  #greet .cur{display:inline-block;width:.12em;height:1em;background:#ffe680;margin-left:.15em;vertical-align:-.1em;animation:blink 1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+
+  #btnAdd{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(22px + env(safe-area-inset-bottom));
+    font:700 15px var(--kr);color:#fff;border:0;border-radius:999px;padding:13px 24px;cursor:pointer;
+    background:linear-gradient(135deg,#ff4d6d,#ff8a3d);box-shadow:0 6px 24px rgba(255,80,100,.45),0 0 0 1px rgba(255,255,255,.15) inset;white-space:nowrap}
+  #btnAdd:active{transform:translateX(-50%) scale(.97)}
+
+  #banner{position:fixed;left:50%;top:30%;transform:translate(-50%,-50%) scale(.85);text-align:center;pointer-events:none;opacity:0;
+    transition:opacity .5s, transform .5s;z-index:15;width:min(92vw,520px);padding:18px 20px;border-radius:18px;
+    background:rgba(8,14,24,.72);border:1px solid rgba(255,230,128,.45);box-shadow:0 0 40px rgba(255,210,80,.25);
+    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+  #banner.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  #banner .b1{font:clamp(14px,4vw,22px) "Press Start 2P",var(--mono);color:#ffe680;text-shadow:0 0 10px #ffcc33}
+  #banner .b2{font:600 13px var(--code);color:#bfe;margin-top:10px}
+  #banner .b3{font:700 clamp(15px,4.4vw,20px) var(--code);color:#fff;margin-top:8px}
+
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:20;padding:16px;
+    backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+  .hidden{display:none!important}
+  .sheet{width:100%;max-width:420px;background:#0c1511;border:1px solid rgba(140,255,170,.25);border-radius:18px;
+    box-shadow:0 20px 60px rgba(0,0,0,.6),0 0 40px rgba(60,255,120,.08);overflow:hidden}
+  .sheetHead{font:12px var(--mono);color:#7fa58c;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between}
+  .sheetHead button{background:none;border:0;color:#9fb;font:16px var(--mono);cursor:pointer;padding:0 2px}
+  .sheetBody{padding:16px}
+  .sheet h2{margin:0 0 12px;font-size:18px}
+  .sheet label{display:block;font-size:12px;color:#8fb59b;margin:12px 0 6px}
+  .sheet textarea,.sheet input[type=text]{width:100%;background:#060c09;border:1px solid rgba(140,255,170,.2);border-radius:10px;color:#eafff0;
+    font:16px var(--kr);padding:10px 12px;outline:none;resize:none}
+  .sheet textarea:focus,.sheet input[type=text]:focus{border-color:rgba(140,255,170,.6)}
+  .count{text-align:right;font:11px var(--mono);color:#5d7a66;margin-top:4px}
+  .kinds{display:flex;gap:8px}
+  .kinds label{flex:1;margin:0;cursor:pointer}
+  .kinds input{display:none}
+  .kinds span{display:block;text-align:center;padding:10px;border-radius:10px;border:1px solid rgba(140,255,170,.2);color:#cfe;font-size:14px}
+  .kinds input:checked + span{border-color:#9dffb0;background:rgba(157,255,176,.1);color:#fff}
+  .swatches{display:flex;gap:10px;flex-wrap:wrap}
+  .swatches button{width:30px;height:30px;border-radius:50%;border:2px solid transparent;cursor:pointer;box-shadow:0 0 10px var(--c)}
+  .swatches button.on{border-color:#fff}
+  .primary{width:100%;margin-top:18px;border:0;border-radius:12px;padding:13px;font:700 15px var(--kr);color:#fff;cursor:pointer;
+    background:linear-gradient(135deg,#ff4d6d,#ff8a3d)}
+  .primary:disabled{opacity:.5;cursor:default}
+  .note{font-size:11.5px;color:#6f8f79;margin-top:10px;line-height:1.5}
+
+  #card .icon{font-size:38px;text-align:center;margin:4px 0 8px}
+  #card .msg{font-size:17px;line-height:1.6;white-space:pre-wrap;word-break:break-word;text-align:center;padding:6px 4px 2px}
+  #card .from{text-align:center;color:#9fc9ab;font-size:13px;margin-top:14px}
+  #card .date{text-align:center;color:#55705d;font:11px var(--mono);margin-top:4px}
+  .row{display:flex;gap:8px;margin-top:18px}
+  .row button{flex:1;border-radius:12px;padding:11px;font:600 14px var(--kr);cursor:pointer;border:1px solid rgba(140,255,170,.25);background:transparent;color:#dfe}
+  .row button.p{background:rgba(157,255,176,.12)}
+
+  #toast{position:fixed;left:50%;bottom:calc(140px + env(safe-area-inset-bottom));transform:translate(-50%,10px);background:rgba(12,24,18,.92);color:#eaffef;
+    border:1px solid rgba(140,255,170,.3);padding:10px 16px;border-radius:10px;font:700 13.5px var(--code);opacity:0;transition:.3s;pointer-events:none;z-index:30;width:max-content;max-width:min(92vw,560px);text-align:center;line-height:1.45}
+  #toast.on{opacity:1;transform:translate(-50%,0)}
+  #guide{position:fixed;right:12px;top:calc(218px + env(safe-area-inset-top));width:260px;max-height:calc(100vh - 330px);overflow:auto;
+    background:rgba(8,14,12,.78);border:1px solid rgba(160,255,190,.22);border-radius:14px;padding:12px 14px 14px;z-index:5;
+    font:12px/1.55 var(--code);color:#cfe9d6;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);scrollbar-width:thin}
+  #guide h3{margin:4px 0 8px;font:700 12px var(--code);color:#9dffb0;letter-spacing:.04em}
+  #guide h3:not(:first-child){margin-top:14px}
+  #guide .txt{margin:0 0 6px;color:#cfe9d6}
+  #guide .stat{margin:0;color:#ffe680;font-weight:700}
+  #guide .tog{margin-top:8px;background:none;border:1px solid rgba(160,255,190,.25);border-radius:8px;color:#bfe9cb;
+    font:12px var(--code);padding:5px 9px;cursor:pointer}
+  #guide .tog:disabled{opacity:.45;cursor:default}
+  #guide #gEggList{margin-top:8px}
+  #guide .sub{color:#6f8f79;font-size:11px;margin:-4px 0 8px}
+  #guide ul{list-style:none;margin:0;padding:0}
+  #guide li{display:flex;gap:8px;padding:4px 0;border-bottom:1px dashed rgba(255,255,255,.06)}
+  #guide li:last-child{border-bottom:0}
+  #guide .mk{flex:0 0 auto;width:16px;text-align:center}
+  #guide .tx{flex:1}
+  #guide .n{color:#6f8f79}
+  #guide li.on .n{color:#ffe680}
+  #guide li.off .tx{opacity:.6}
+  #guide li.on b{color:#fff}
+  #guide .hint{display:block;color:#8fb59b;font-size:11px}
+  #guide .close{position:sticky;top:0;float:right;background:none;border:0;color:#9fb;font:14px var(--mono);cursor:pointer}
+  @media (max-width: 999px){
+    #guide{left:12px;right:12px;width:auto;top:auto;bottom:calc(84px + env(safe-area-inset-bottom));max-height:58vh;z-index:18;background:rgba(8,14,12,.94);font-size:12px}
+  }
+  .chip.mail{position:relative}
+  .chip.mail.has{border-color:#ffe680;color:#fff6c8;animation:mailGlow 1.6s ease-in-out infinite}
+  .chip.mail.has::after{content:"✨";position:absolute;top:-9px;right:-6px;font-size:13px;animation:twinkle 1.2s ease-in-out infinite}
+  @keyframes mailGlow{0%,100%{box-shadow:0 0 0 rgba(255,220,100,0)}50%{box-shadow:0 0 16px rgba(255,220,100,.75),0 0 4px rgba(255,255,255,.6) inset}}
+  @keyframes twinkle{0%,100%{opacity:.2;transform:scale(.7) rotate(0)}50%{opacity:1;transform:scale(1.15) rotate(20deg)}}
+  .badge{display:inline-block;min-width:18px;padding:0 5px;margin-left:4px;border-radius:9px;background:#ff4d6d;color:#fff;font:700 11px/18px var(--mono);text-align:center}
+  .two{display:flex;gap:10px}.two>div{flex:1;min-width:0}
+  .sheet select{width:100%;background:#060c09;border:1px solid rgba(140,255,170,.2);border-radius:10px;color:#eafff0;font:15px var(--code);padding:10px 10px;outline:none}
+  .sheet select:focus{border-color:rgba(140,255,170,.6)}
+  #card .from{font-family:var(--code)}
+  .tr{margin-top:14px;border-top:1px dashed rgba(255,255,255,.1);padding-top:12px}
+  .trRow{display:flex;gap:8px}
+  .trRow select{flex:1;padding:8px 10px;font-size:13px}
+  .trRow button{flex:0 0 auto;border-radius:10px;padding:8px 12px;font:600 13px var(--code);cursor:pointer;border:1px solid rgba(140,255,170,.35);background:rgba(157,255,176,.1);color:#dfe}
+  .trOut{margin-top:10px;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.05);font:15px/1.6 var(--kr);white-space:pre-wrap;word-break:break-word}
+  .trOut small{display:block;margin-top:6px;color:#6f8f79;font:11px var(--code)}
+  .trOut a{color:#9dffb0}
+  #mailbox .who{display:flex;align-items:center;gap:10px;font:13px var(--code);color:#9fc9ab}
+  #mailbox .who select{flex:1}
+  .sw{display:flex!important;align-items:center;gap:8px;cursor:pointer;font:13px var(--code)!important;color:#e9fff0!important;margin:14px 0 4px!important}
+  .sw input{width:18px;height:18px;accent-color:#ffd34d}
+  #mbList{list-style:none;margin:12px 0 0;padding:0;max-height:46vh;overflow:auto}
+  #mbList button{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;background:rgba(255,255,255,.03);border:1px solid rgba(140,255,170,.14);
+    border-radius:12px;padding:10px 12px;margin-bottom:8px;color:#e6fbe9;cursor:pointer;font:13px var(--code)}
+  #mbList button:hover{border-color:rgba(140,255,170,.45)}
+  #mbList .ic{font-size:18px;line-height:1.2}
+  #mbList .body{flex:1;min-width:0}
+  #mbList .pv{display:block;color:#b8d6c0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--kr);margin-top:2px}
+  #mbList .dt{color:#5d7a66;font-size:11px}
+  #mbList .new{color:#ffe680;font-weight:700}
+  #mbList li.unread button{border-color:rgba(255,230,128,.55);box-shadow:0 0 12px rgba(255,220,100,.18)}
+  .empty{color:#6f8f79;font:13px var(--code);text-align:center;padding:18px 0}
+  #whoGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px;margin-top:14px}
+  #whoGrid button{padding:11px 6px;border-radius:12px;border:1px solid rgba(140,255,170,.25);background:rgba(157,255,176,.06);color:#eafff0;
+    font:700 14px var(--code);cursor:pointer;transition:.15s}
+  #whoGrid button:hover{border-color:#ffe680;background:rgba(255,230,128,.12);transform:translateY(-1px)}
+  #whoGrid button.cur{border-color:#ffe680;color:#fff3b0}
+  .ghost{width:100%;margin-top:12px;border-radius:12px;padding:11px;font:600 13px var(--code);cursor:pointer;border:1px dashed rgba(140,255,170,.3);background:transparent;color:#9fc9ab}
+  .linkbtn{background:none;border:1px solid rgba(140,255,170,.3);border-radius:8px;color:#bfe9cb;font:12px var(--code);padding:5px 9px;cursor:pointer}
+  #whoami .lead{margin:4px 0 0;color:#9fc9ab;font:13px/1.6 var(--code)}
+  body.mbopen #topbar{z-index:25}
+  .chip.mail.shake{animation:shake .35s}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px) rotate(-3deg)}75%{transform:translateX(3px) rotate(3deg)}}
+</style>
+</head>
+<body>
+<canvas id="c" aria-label="Spinning ASCII Christmas tree"></canvas>
+
+<div id="hud"></div>
+<div id="topbar">
+  <button class="chip mail" id="btnMail">📬 Mailbox</button>
+  <button class="chip" id="btnMusic">🔇 Play music</button>
+  <button class="chip" id="btnFill">FILL: symbol</button>
+  <button class="chip" id="btnRandom">🎁 Open a random one</button>
+  <button class="chip" id="btnGuide">📜 Guide</button>
+</div>
+
+<div id="banner"><div class="b1" id="bannerTitle">LEVEL UP!</div><div class="b2" id="bannerSub"></div><div class="b3" id="bannerText"></div></div>
+<div id="greet"><span id="greetText"></span><span class="cur"></span></div>
+<button id="btnAdd">＋ Hang your message</button>
+
+<!-- 메시지 작성 -->
+<div class="overlay hidden" id="modal">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+    <div class="sheetHead"><span>// new_wish.js</span><button data-close aria-label="Close">✕</button></div>
+    <form class="sheetBody" id="form" autocomplete="off">
+      <h2 id="mTitle">Hang a message on the tree 🎄</h2>
+      <label for="fText">Message</label>
+      <textarea id="fText" rows="3" maxlength="80" placeholder="Merry Christmas! Thanks for this year :)" required></textarea>
+      <div class="count"><span id="fCount">0</span>/80</div>
+      <div class="two">
+        <div><label for="fFrom">From</label><select id="fFrom"></select></div>
+        <div><label for="fTo">To</label><select id="fTo"></select></div>
+      </div>
+      <label>Style</label>
+      <div class="kinds">
+        <label><input type="radio" name="kind" value="ornament" checked><span>🔴 Ornament</span></label>
+        <label><input type="radio" name="kind" value="gift"><span>🎁 Gift box</span></label>
+      </div>
+      <label>Color</label>
+      <div class="swatches" id="swatches"></div>
+      <button class="primary" type="submit" id="fSubmit">Hang it!</button>
+      <div class="note" id="fNote"></div>
+    </form>
+  </div>
+</div>
+
+<!-- 메시지 보기 -->
+<div class="overlay hidden" id="card">
+  <div class="sheet" role="dialog" aria-modal="true">
+    <div class="sheetHead"><span id="cHead">// wish.open()</span><button data-close aria-label="Close">✕</button></div>
+    <div class="sheetBody">
+      <div class="icon" id="cIcon">🎁</div>
+      <div class="msg" id="cMsg"></div>
+      <div class="from" id="cFrom"></div>
+      <div class="date" id="cDate"></div>
+      <div class="tr">
+        <div class="trRow"><select id="trLang" aria-label="Translate to"></select><button id="trBtn">🌐 Translate</button></div>
+        <div class="trOut hidden" id="trOut"></div>
+      </div>
+      <div class="row"><button data-close>Close</button><button class="p" id="cNext">Open another</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- 처음 화면: 내가 누군지 고르기 -->
+<div class="overlay hidden" id="whoami">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="whoTitle">
+    <div class="sheetHead"><span>// whoami.js</span><button data-close aria-label="Close">✕</button></div>
+    <div class="sheetBody">
+      <h2 id="whoTitle">🎄 Who are you?</h2>
+      <p class="lead">Pick your name so you can find the letters sent to you.</p>
+      <div id="whoGrid"></div>
+      <button type="button" class="ghost" id="whoGuest">Just visiting 👀</button>
+    </div>
+  </div>
+</div>
+
+<!-- 편지함 -->
+<div class="overlay hidden" id="mailbox">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="mbTitle">
+    <div class="sheetHead"><span>// inbox.js</span><button data-close aria-label="Close">✕</button></div>
+    <div class="sheetBody">
+      <h2 id="mbTitle">📬 Mailbox</h2>
+      <div class="who"><span id="whoNow"></span><button type="button" class="linkbtn" id="btnSwitch">Switch</button></div>
+      <label class="sw"><input type="checkbox" id="hlMine"> ✨ Make only my ornaments &amp; gifts glow</label>
+      <ul id="mbList"></ul>
+    </div>
+  </div>
+</div>
+
+<aside id="guide" class="hidden" aria-label="Levels and easter eggs">
+  <button class="close" id="guideClose" aria-label="Close">✕</button>
+  <h3>// LEVELS</h3>
+  <p class="txt">Keep decorating the tree&hellip; level up and something <i>might</i> happen. 👀</p>
+  <p class="stat" id="gLevel"></p>
+  <h3>// EASTER EGGS</h3>
+  <p class="txt">There are secret easter eggs hidden all over this tree. Can you find them? 🥚</p>
+  <p class="stat" id="gEggs"></p>
+  <button class="tog" id="gEggTog" aria-expanded="false"></button>
+  <ul id="gEggList" class="hidden"></ul>
+</aside>
+
+<div id="toast"></div>
+
+<script>
+/* ============================================================
+   설정
+   - FIREBASE_DB_URL 을 비워두면 메시지는 "방문자 각자의 브라우저"에만 저장됩니다.
+   - 모두가 같은 트리를 보게 하려면 Firebase Realtime Database URL을 넣으세요.
+     예: "https://my-tree-default-rtdb.asia-southeast1.firebasedatabase.app"
+   - 미리보기: 주소 뒤에 ?preview=75 처럼 붙이면 가짜 장식 75개로 단계를 확인할 수 있어요 (저장 안 됨).
+   ============================================================ */
+const CONFIG = {
+  FIREBASE_DB_URL: "https://christmas-tree-734db-default-rtdb.asia-southeast1.firebasedatabase.app",
+  GREET: "MERRY CHRISTMAS 2026",
+  STAR_TEXT: "AIRIS LAB",   // 레벨 10에서 트리 꼭대기 별이 이 글자로 바뀌어요 (영문 대문자/공백)
+  SPIN: 0.35,
+  // 연구실 멤버 (편지 보내는이/받는이 목록)
+  MEMBERS: ["강은", "상은", "Vika", "Akira", "부승", "종호", "정빈", "경택", "Rai", "성준", "기락", "교수", "이든", "혜림"],
+  MAX_TEXT: 80,
+  MAX_NAME: 12,
+  COOLDOWN_SEC: 15,
+  POLL_SEC: 15,
+  PER_LEVEL: 10,
+};
+
+const COLORS = { red:"#ff4d5e", gold:"#ffd34d", blue:"#5ab4ff", pink:"#ff7ad9", purple:"#b98bff", white:"#f2f4ff" };
+const SHADE = {
+  red:    ["#ffc2c8", "#ff3b4f", "#6e0f1c"],
+  gold:   ["#fff4c2", "#ffc928", "#7a5608"],
+  blue:   ["#d6edff", "#3d9dff", "#0f356b"],
+  pink:   ["#ffd9f3", "#ff5fcf", "#6b1757"],
+  purple: ["#ece2ff", "#9b6bff", "#341c73"],
+  white:  ["#ffffff", "#dfe5f5", "#6c7696"],
+};
+
+const LEVELS = [
+  null,
+  { icon:"🌙", text:"The moon rises over the night sky" },
+  { icon:"🌠", text:"Shooting stars start falling" },
+  { icon:"🏠", text:"A cozy cabin appears by the tree" },
+  { icon:"🐈", text:"A cat comes to nap under the tree" },
+  { icon:"🛷", text:"Santa's sleigh flies across the sky" },
+  { icon:"🐧", text:"Penguin pals and a snowman drop by" },
+  { icon:"🦆", text:"A GIANT rubber duck appears?!" },
+  { icon:"🛸", text:"A spaceship passes by… aliens love Christmas too?" },
+  { icon:"👻", text:"A ghost in a Santa hat stops by to say hi" },
+  { icon:"⭐", text:`The ${CONFIG.STAR_TEXT} star! Golden garland & fireworks` },
+];
+const MAX_LEVEL = LEVELS.length - 1;
+
+/* ---------------- 유틸 ---------------- */
+const $ = s => document.querySelector(s);
+const TAU = Math.PI * 2;
+function hashStr(s){ let h = 2166136261 >>> 0; for (const ch of s){ h ^= ch.codePointAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+function rng(seed){ return function(){ seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function wrapAngle(a){ a = (a + Math.PI) % TAU; if (a < 0) a += TAU; return a - Math.PI; }
+const rand = (a, b) => a + Math.random() * (b - a);
+const pick = arr => arr[(Math.random() * arr.length) | 0];
+function toast(text, ms = 2400){ const el = $("#toast"); el.textContent = text; el.classList.add("on"); clearTimeout(toast._t); toast._t = setTimeout(() => el.classList.remove("on"), ms); }
+
+/* ---------------- 트리 형태 ---------------- */
+const TIERS = 4, RB = 0.46, TOP_Y = 0.06, FOLIAGE_H = 0.94, TRUNK_Y0 = 1.0, TRUNK_Y1 = 1.11, GIFT_Y = 1.12;
+function radiusAt(h){ const tier = h * TIERS, f = tier - Math.floor(tier); return (0.06 + RB * h) * (0.6 + 0.4 * f); }
+
+const points = [];
+(function buildTree(){
+  const r = rng(20261225);
+  for (let i = 0; i < 12000; i++){
+    const h = Math.sqrt(r()) * 0.995, th = r() * TAU;
+    const rr = radiusAt(h) * (0.86 + 0.14 * Math.sqrt(r()));
+    points.push({ x: Math.cos(th) * rr, z: Math.sin(th) * rr, y: TOP_Y + h * FOLIAGE_H, nx: Math.cos(th), nz: Math.sin(th),
+      n: r(), hv: (r() * 3) | 0, light: r() < 0.028, lc: (r() * 6) | 0, ph: r() * TAU, li: i });
+  }
+  for (let i = 0; i < 500; i++){
+    const th = r() * TAU, rr = 0.05 + r() * 0.012;
+    points.push({ x: Math.cos(th) * rr, z: Math.sin(th) * rr, y: TRUNK_Y0 + r() * (TRUNK_Y1 - TRUNK_Y0), nx: Math.cos(th), nz: Math.sin(th), n: r(), trunk: true, li: i });
+  }
+})();
+const LIGHT_COUNT = points.filter(p => p.light).length;
+const garland = [];
+for (let i = 0; i < 1400; i++){
+  const s = 0.04 + (i / 1400) * 0.95, th = s * TAU * 4.5, rr = radiusAt(s) * 0.98 + 0.02;
+  garland.push({ x: Math.cos(th) * rr, z: Math.sin(th) * rr, y: TOP_Y + s * FOLIAGE_H, s });
+}
+
+const FOL = [0,1,2].map(hv => Array.from({length: 16}, (_, lv) => `hsl(${108 + hv * 13},${62 + hv * 6}%,${(13 + lv * 3.7).toFixed(1)}%)`));
+const RAINBOW = Array.from({length: 24}, (_, h) => Array.from({length: 8}, (_, l) => `hsl(${h * 15},85%,${30 + l * 6}%)`));
+const TRUNK = Array.from({length: 8}, (_, lv) => `hsl(28,45%,${18 + lv * 5}%)`);
+const LIGHT_ON  = ["#ff5a6e","#ffd34d","#62c6ff","#ff8ae2","#ffffff","#ffa14d"];
+const LIGHT_OFF = ["#7a2a35","#7a6422","#2a5a7a","#7a3f6b","#666a70","#7a4a22"];
+const RAMP = ".:-=+*%#&@WM";
+const STAR_ART = ["    *    ","   ***   ","*********"," ******* ","  *****  "," *** *** ","**     **"];
+const STAR_CH = "*#@&*";
+const STAR_COL = ["#fff6b0","#ffe066","#ffd23f","#ffc21a"];
+const GIFT_ART = ["  \\_/  ","[==|==]","[##|##]","[##|##]"];
+const ORN_ART = ["  _o_  ", " /'@@\\ ", "(@@@@@)", " \\@@@/ "];
+const SANTA = [
+  "   _*_                \\|/      \\|/  ",
+  "  (^o^)____ ~~~~~~~~~(.@)~~~~~~(.@) ",
+  "  \\______/           /\\/\\      /\\/\\ ",
+];
+const PENGUIN = [" _*_ ", " (o> ", " //\\ ", " V_/_"];
+const SNOWMAN = ["  _===_  ", "  (.,.)  ", " >( : )< ", " (  :  ) "];
+const CRESCENT = ["    _.._ ", "  .' .-'`", " /  /    ", "|  |     ", "|  |     ", " \\  \\    ", "  '._'-._"];
+const FULLMOON = ["   _.._   ", " .'  o '. ", "/ .     o\\", "|   O    |", "\\  o  .  /", " '._  _.' ", "    ''    "];
+const HOUSE = [
+  "     ( )         ",
+  "      ||_______  ",
+  "     /~~~~~~~~/\\ ",
+  "    /~~~~~~~~/  \\",
+  "    |[#]  [#]|[#]|",
+  "    |   |=|  |   |",
+  "    |___|_|__|___|",
+];
+const CAT_WALK = [
+  ["       /\\_/\\ ", "  ~___( o.o )", "   (_  _  _) ", "    /|  /|   "],
+  ["       /\\_/\\ ", "  ~___( o.o )", "   (_  _  _) ", "    |\\  |\\   "],
+];
+const CAT_SLEEP = ["             ", "   /\\_/\\___  ", "  ( -.- )   )~", "   (_______)  "];
+const UFO = ["      _.---._      ", "    .'  o o  '.    ", "  (_____________)  ", "    *  *  *  *     "];
+const GHOST = [
+  ["    /\\     ", "   /__\\*   ", "  .-''-.   ", " / o  o \\  ", "|   ()   |/", "|        | ", " \\/\\/\\/\\/  "],
+  ["    /\\     ", "   /__\\*   ", "  .-''-.   ", " / o  o \\  ", "|   ()   |_", "|        |\\", " \\/\\/\\/\\/  "],
+];
+const ENVELOPE = [".----.", "|\\*/|", "'----'"];
+const FW_COLORS = [["#ff5a6e","#ffb3bd"],["#ffd34d","#fff3b0"],["#62c6ff","#c9ecff"],["#ff8ae2","#ffd1f3"],["#9dffb0","#e0ffe7"],["#b98bff","#e6d8ff"]];
+const FW_SHAPES = {
+  heart:     [".##...##.","####.####","#########","#########",".#######.","..#####..","...###...","....#...."],
+  smile:     ["..#####..",".#.....#.","#..#.#..#","#.......#","#.#...#.#","#..###..#",".#.....#.","..#####.."],
+  star:      ["....#....","...###...","#########",".#######.","..#####..",".##...##.","#.......#"],
+  tree:      ["....#....","...###...","..#####..","...###...","..#####..",".#######.","....#...."],
+  snowflake: ["#...#...#",".#..#..#.","..#.#.#..","#########","..#.#.#..",".#..#..#.","#...#...#"],
+};
+const FONT = {
+  A:".#.#.#####.##.#",
+  B:"##.#.###.#.###.",
+  C:".###..#..#...##",
+  D:"##.#.##.##.###.",
+  E:"####..##.#..###",
+  F:"####..##.#..#..",
+  G:".###..#.##.#.##",
+  H:"#.##.#####.##.#",
+  I:"###.#..#..#.###",
+  J:"..#..#..##.#.#.",
+  K:"#.##.###.#.##.#",
+  L:"#..#..#..#..###",
+  M:"#.########.##.#",
+  N:"##.#.##.##.##.#",
+  O:".#.#.##.##.#.#.",
+  P:"##.#.###.#..#..",
+  Q:".#.#.##.###..##",
+  R:"##.#.###.#.##.#",
+  S:".###...#...###.",
+  T:"###.#..#..#..#.",
+  U:"#.##.##.##.####",
+  V:"#.##.##.##.#.#.",
+  W:"#.##.########.#",
+  X:"#.##.#.#.#.##.#",
+  Y:"#.##.#.#..#..#.",
+  Z:"###..#.#.#..###",
+};
+function buildLogo(text){
+  const rowsOut = ["", "", "", "", ""];
+  for (const chh of text.toUpperCase()){
+    const g = FONT[chh];
+    for (let r = 0; r < 5; r++) rowsOut[r] += (g ? g.slice(r * 3, r * 3 + 3) : "..") + ".";
+  }
+  return rowsOut.map(r => r.replace(/\./g, " "));
+}
+const LOGO = buildLogo(CONFIG.STAR_TEXT);
+
+/* ---------------- 상태 ---------------- */
+let FILL = "symbol", TEXT_SRC = "MERRYCHRISTMAS";
+let msgs = [];
+let angle = 0.6, vel = CONFIG.SPIN, spinDir = 1, t = 0;
+let focus = null, hits = [], lettersDrawn = 0;
+let LEVEL = 0, ackMilestone = 0;
+const DB = (CONFIG.FIREBASE_DB_URL || "").replace(/\/+$/, "");
+const PREVIEW = Math.max(0, Math.min(500, parseInt(new URLSearchParams(location.search).get("preview") || "0", 10) || 0));
+
+// 이스터에그 상태
+let rainbowUntil = 0, swayUntil = 0, discoUntil = 0, blizzardUntil = 0, moonFullUntil = 0;
+let sleeping = false, lastInput = 0;
+const spinLog = [], starTaps = [];
+let prevAngle = angle;
+let starHit = null, moonHit = null, catHit = null, wishHit = null;
+const bubbles = [];
+
+/* ---------------- 캔버스 / 그리드 ---------------- */
+const cv = $("#c"), ctx = cv.getContext("2d");
+let W, H, DPR, fs, cw, ch, cols, rows, NCELL, depth, chars, colors, owner, glow, cx, cy, scale, groundRow;
+let bgStars = [], snow = [], groundCh = [];
+const COST = Math.cos(0.17), SINT = Math.sin(0.17);
+
+function resize(){
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = innerWidth; H = innerHeight;
+  cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+  cv.style.width = W + "px"; cv.style.height = H + "px";
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+  const topY = Math.max(70, H * 0.08);
+  const bottomY = $("#greet").getBoundingClientRect().top - 8;
+  const avail = Math.max(180, bottomY - topY);
+  scale = Math.min(avail / 1.66, W / 1.2);
+  cx = W / 2;
+  cy = topY + Math.max(0, (avail - scale * 1.66) * 0.45) + (0.55 + 0.22) * COST * scale;
+
+  fs = Math.max(7, Math.min(14, Math.round(scale * 0.94 / 44 / 1.12)));
+  ctx.font = `${fs}px "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace`;
+  cw = ctx.measureText("M").width;
+  ch = Math.round(fs * 1.12);
+  cols = Math.ceil(W / cw); rows = Math.ceil(H / ch); NCELL = cols * rows;
+  depth = new Float32Array(NCELL); chars = new Array(NCELL); colors = new Array(NCELL);
+  owner = new Int32Array(NCELL); glow = new Uint8Array(NCELL);
+  groundRow = Math.round((cy + (GIFT_Y - 0.55) * COST * scale) / ch) + 1;
+
+  const r = rng(7);
+  bgStars = [];
+  for (let i = 0, n = Math.round(NCELL / 55); i < n; i++) bgStars.push({ c: (r() * cols) | 0, r: (r() * rows) | 0, ch: ".·+*"[(r() * 4) | 0], ph: r() * TAU, sp: 0.6 + r() * 2 });
+  snow = [];
+  for (let i = 0, n = Math.round(NCELL / 140); i < n; i++) snow.push({ x: r() * cols, y: r() * rows, v: 1.5 + r() * 3, dx: (r() - 0.5) * 0.8, ch: r() < 0.5 ? "*" : "." });
+  groundCh = Array.from({ length: cols }, () => "_.-~'*_.,"[(r() * 9) | 0]);
+}
+
+function put(c, r, z, chr, col, own, gl){
+  if (c < 0 || r < 0 || c >= cols || r >= rows) return;
+  const i = r * cols + c;
+  if (z <= depth[i]) return;
+  depth[i] = z; chars[i] = chr; colors[i] = col; owner[i] = own; glow[i] = gl;
+}
+function sprite(art, c0, r0, z, colorFn, gl){
+  for (let rr = 0; rr < art.length; rr++){
+    const line = art[rr];
+    for (let cc = 0; cc < line.length; cc++){
+      const chh = line[cc]; if (chh === " ") continue;
+      put(c0 + cc, r0 + rr, z, chh, colorFn(chh, rr, cc), 0, gl);
+    }
+  }
+}
+
+let PX = 0, PY = 0, PZ = 0, PF = 1, ca = 1, sa = 0, sway = 0;
+function proj(x, y, z){
+  const xr = x * ca + z * sa, zr = -x * sa + z * ca;
+  const f = 1 / (1 - zr * 0.3);
+  PX = cx + sway * (1 - y) + xr * scale * f;
+  PY = cy + ((y - 0.55) * COST + zr * SINT) * scale * f;
+  PZ = zr; PF = f;
+}
+
+/* ---------------- 메시지 배치 ---------------- */
+function prepare(m){
+  const r = rng(hashStr(m.id));
+  if (m.kind === "gift"){
+    const th = r() * TAU, rad = 0.12 + r() * 0.5;
+    m.x = Math.cos(th) * rad; m.z = Math.sin(th) * rad; m.y = GIFT_Y; m.theta = th;
+  } else {
+    const h = 0.16 + r() * 0.78, th = r() * TAU;
+    const rad = radiusAt(h) * 0.97 + 0.03;
+    m.x = Math.cos(th) * rad; m.z = Math.sin(th) * rad; m.y = TOP_Y + h * FOLIAGE_H; m.theta = th;
+  }
+  m.col = COLORS[m.color] || COLORS.red;
+  m.shade = SHADE[m.color] || SHADE.red;
+  return m;
+}
+function rebuildTextSrc(){
+  const s = msgs.map(m => m.text + m.name).join("").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  TEXT_SRC = (s + "MERRYCHRISTMAS").slice(0, 400);
+}
+
+/* ---------------- 파티클 (불꽃·별똥별·zzz) ---------------- */
+const parts = [];
+let nextRocket = 0, nextMeteor = 0, showRockets = 0, nextShowRocket = 0;
+
+function launchRocket(shape){
+  if (parts.length > 1200) return;
+  const pal = pick(FW_COLORS);
+  if (shape === undefined && Math.random() < 0.35) shape = pick(Object.keys(FW_SHAPES));
+  parts.push({ rocket: true, x: rand(0.18, 0.82) * cols, y: rows * 0.62, vx: rand(-1.5, 1.5), vy: -rows * (shape ? rand(0.42, 0.5) : rand(0.55, 0.75)), life: 0, max: rand(0.7, 1.0), pal, shape });
+}
+function burst(x, y, n, pal, power){
+  const asp = ch / cw;
+  for (let i = 0; i < n; i++){
+    const a = Math.random() * TAU, sp = power * (0.35 + Math.random() * 0.65);
+    parts.push({ x, y, vx: Math.cos(a) * sp * asp, vy: Math.sin(a) * sp, life: 0, max: rand(0.9, 1.6), pal, g: 5 });
+  }
+}
+function shapeBurst(x, y, name, pal){
+  const bmp = FW_SHAPES[name], h = bmp.length, w = bmp[0].length;
+  const on = (r, c) => r >= 0 && r < h && c >= 0 && c < w && bmp[r][c] === "#";
+  const sx = 2.2, sy = sx * cw / ch * 1.05;
+  for (let r = 0; r < h; r++) for (let c = 0; c < w; c++){
+    if (!on(r, c)) continue;
+    const edge = !on(r - 1, c) || !on(r + 1, c) || !on(r, c - 1) || !on(r, c + 1);
+    if (!edge) continue;   // 외곽선만 → 모양이 또렷하게
+    for (const [dx, dy] of [[0, 0], [0.5, 0], [0, 0.5]]){
+      if ((dx && !on(r, c + 1)) || (dy && !on(r + 1, c))) continue;
+      parts.push({ shape: true, ox: x, oy: y, tx: (c + dx - (w - 1) / 2) * sx, ty: (r + dy - (h - 1) / 2) * sy, x, y, life: 0, max: rand(1.9, 2.3), pal });
+    }
+  }
+}
+function spawnMeteor(){ parts.push({ meteor: true, x: rand(0.3, 1.1) * cols, y: rand(0, 0.15) * rows, vx: -cols * 0.55, vy: rows * 0.22, life: 0, max: 1.3 }); }
+function spawnZ(x, y){ parts.push({ chr: Math.random() < 0.5 ? "z" : "Z", x, y, vx: rand(0.3, 1.2), vy: -rand(1, 2), life: 0, max: rand(1.6, 2.4), pal: ["#bcd3ff","#e6efff"] }); }
+
+function stepParticles(dt){
+  for (let i = parts.length - 1; i >= 0; i--){
+    const p = parts[i];
+    p.life += dt;
+    if (p.rocket){
+      p.x += p.vx * dt; p.y += p.vy * dt; p.vy *= 0.985;
+      if (p.life > p.max){
+        if (p.shape) shapeBurst(p.x, p.y, p.shape, p.pal); else burst(p.x, p.y, 44, p.pal, rows * 0.16);
+        parts.splice(i, 1);
+      }
+      continue;
+    }
+    if (p.life > p.max){ parts.splice(i, 1); continue; }
+    if (p.shape){
+      const k = Math.min(1, p.life / 0.55), e = 1 - Math.pow(1 - k, 3);
+      const droop = Math.max(0, p.life - 1.1);
+      p.x = p.ox + p.tx * e; p.y = p.oy + p.ty * e + droop * droop * 6;
+      continue;
+    }
+    p.x += p.vx * dt; p.y += p.vy * dt;
+    if (p.g){ p.vy += p.g * dt; p.vx *= 0.97; p.vy *= 0.97; }
+  }
+}
+function drawParticles(){
+  const blink = (t * 8 | 0) % 2;
+  for (const p of parts){
+    if (p.rocket){
+      put(p.x | 0, p.y | 0, -60, "|", p.pal[1], 0, 0);
+      put(p.x | 0, (p.y | 0) + 1, -60, ".", "#ffb36b", 0, 0);
+    } else if (p.env){
+      const col = p.gold ? "#ffe680" : "#f4f8ff";
+      for (let rr = 0; rr < 3; rr++) for (let j = 0; j < 6; j++){
+        const chh = ENVELOPE[rr][j]; if (chh !== " ") put((p.x | 0) + j, (p.y | 0) + rr, 0.98, chh, chh === "*" ? "#ff5a6e" : col, 0, 0);
+      }
+    } else if (p.meteor){
+      const k = p.life / p.max;
+      for (let j = 0; j < 7; j++) put((p.x + j * 2.2) | 0, (p.y - j * 0.9) | 0, -75, j === 0 ? "*" : (j < 3 ? "=" : "-"), j === 0 ? "#ffffff" : `rgba(200,225,255,${((1 - j / 7) * (1 - k)).toFixed(2)})`, 0, 0);
+    } else {
+      const k = p.life / p.max;
+      const chh = p.chr || (p.spark ? (blink ? "*" : "+") : p.shape ? (k < 0.7 ? "@" : k < 0.85 ? "*" : "+") : k < 0.25 ? "@" : k < 0.5 ? "*" : k < 0.75 ? "+" : ".");
+      put(p.x | 0, p.y | 0, (p.chr || p.front) ? 0.97 : -65, chh, k < 0.35 ? p.pal[1] : p.pal[0], 0, 0);
+    }
+  }
+}
+
+/* ---------------- 등장인물들 ---------------- */
+const santa = { active: false, x: 0, nextAt: 6 };
+const cat   = { phase: "off", x: 0, spot: 0, until: 0, nextAt: 4, fast: false };
+const duck  = { active: false, t0: 0, nextAt: 10 };
+const ufo   = { active: false, x: 0, nextAt: 8 };
+const ghost = { phase: "off", x: 0, y: 0, until: 0, nextAt: 10 };
+
+function summon(kind){
+  if (kind === "santa" && !santa.active){ santa.active = true; santa.x = -SANTA[0].length; }
+  if (kind === "cat" && cat.phase === "off"){ cat.phase = "in"; cat.x = -14; cat.spot = Math.round(cx / cw) - 6; cat.fast = false; }
+  if (kind === "duck" && !duck.active){ duck.active = true; duck.t0 = t; }
+  if (kind === "ufo" && !ufo.active){ ufo.active = true; ufo.x = cols + 2; }
+  if (kind === "ghost" && ghost.phase === "off"){ ghost.phase = "in"; ghost.x = cols + 2; ghost.y = Math.round(rows * 0.36); }
+  if (kind === "fireworks"){ showRockets += 8; nextShowRocket = t + 0.3; }
+}
+
+function stepActors(dt){
+  // 산타
+  if (LEVEL >= 5 && !santa.active && t > santa.nextAt) summon("santa");
+  if (santa.active){
+    santa.x += dt * (cols + 40) / 11;
+    if (Math.random() < dt * 25) parts.push({ x: santa.x + 2, y: rows * 0.13 + 2 + Math.sin(t * 2.2) * 1.2, vx: -2, vy: rand(-0.5, 1.5), life: 0, max: rand(0.6, 1.2), pal: ["#fff3b0","#ffd34d"], g: 2, spark: true });
+    if (santa.x > cols + 2){ santa.active = false; santa.nextAt = t + rand(18, 32); }
+  }
+  // 고양이
+  if (LEVEL >= 4 && cat.phase === "off" && t > cat.nextAt) summon("cat");
+  if (cat.phase === "in"){ cat.x += dt * 7; if (cat.x >= cat.spot){ cat.x = cat.spot; cat.phase = "sleep"; cat.until = t + 15; } }
+  else if (cat.phase === "sleep"){ if (Math.random() < dt * 0.9) spawnZ(cat.x + 9, groundRow - 4); if (t > cat.until) cat.phase = "out"; }
+  else if (cat.phase === "out"){ cat.x += dt * (cat.fast ? 24 : 7); if (cat.x > cols + 2){ cat.phase = "off"; cat.nextAt = t + rand(30, 50); } }
+  // 러버덕
+  if (LEVEL >= 7 && !duck.active && t > duck.nextAt) summon("duck");
+  if (duck.active && t - duck.t0 > 10){ duck.active = false; duck.nextAt = t + rand(40, 70); }
+  // 우주선
+  if (LEVEL >= 8 && !ufo.active && t > ufo.nextAt) summon("ufo");
+  if (ufo.active){ ufo.x -= dt * cols / 13; if (ufo.x < -22){ ufo.active = false; ufo.nextAt = t + rand(25, 45); } }
+  // 유령 손님
+  if (LEVEL >= 9 && ghost.phase === "off" && t > ghost.nextAt) summon("ghost");
+  if (ghost.phase === "in"){
+    const target = Math.min(cols - 13, Math.round((cx + Math.min(scale * 0.42, W * 0.3)) / cw));
+    ghost.x += (target - ghost.x) * Math.min(1, dt * 1.6);
+    if (Math.abs(target - ghost.x) < 0.6){ ghost.phase = "wave"; ghost.until = t + 5.5; }
+  } else if (ghost.phase === "wave"){ if (t > ghost.until) ghost.phase = "out"; }
+  else if (ghost.phase === "out"){ ghost.y -= dt * 9; if (ghost.y < -10){ ghost.phase = "off"; ghost.nextAt = t + rand(40, 60); } }
+  // 불꽃놀이 & 별똥별
+  if (LEVEL >= 10 && t > nextRocket){
+    launchRocket();
+    const extra = Math.max(0, Math.floor(msgs.length / CONFIG.PER_LEVEL) - MAX_LEVEL);
+    nextRocket = t + rand(1.4, 3.6) / (1 + extra * 0.3);
+  }
+  if (showRockets > 0 && t > nextShowRocket){ launchRocket(); showRockets--; nextShowRocket = t + rand(0.15, 0.45); }
+  if (LEVEL >= 2 && t > nextMeteor){ spawnMeteor(); nextMeteor = t + rand(3.5, 8); }
+}
+
+/* 색상 함수 */
+function santaColor(chh, r, c){
+  if (c <= 10){
+    if (chh === "*") return "#ffffff";
+    if (r === 0) return "#ff4d5e";
+    if (r === 1 && (chh === "^" || chh === "o")) return "#ffd9b3";
+    if (r === 1 && c <= 6) return "#ff4d5e";
+    if (r === 1) return "#ffd34d";
+    return "#ff4d5e";
+  }
+  if (chh === "~") return "#d8b98f";
+  if (chh === "@") return "#ff3344";
+  if (chh === ".") return "#ffffff";
+  return "#c58b52";
+}
+const penguinColor = (chh, r) => r === 0 ? (chh === "*" ? "#ffffff" : "#ff4d5e") : (chh === ">" || chh === "V") ? "#ffa94d" : "#e3ebf5";
+const snowmanColor = (chh, r) => r === 0 ? "#9aa8bd" : chh === "," ? "#ffa94d" : (chh === ">" || chh === "<") ? "#c58b52" : chh === ":" ? "#9aa8bd" : "#ffffff";
+const moonColor = () => "#fff1b8";
+function houseColor(chh, r){
+  if (r === 0) return "rgba(200,210,225,.55)";
+  if (chh === "~") return "#f4f8ff";
+  if (chh === "#") return Math.sin(t * 3 + r) > -0.6 ? "#ffd56b" : "#c9962f";
+  if (chh === "=") return "#ffd34d";
+  return "#b07a48";
+}
+const catColor = (chh) => (chh === "o" || chh === "-" || chh === ".") ? "#3b2a1a" : chh === "~" ? "#ffb066" : "#ffb066";
+function ufoColor(chh, r, c){
+  if (r === 3) return ["#ff5a6e","#62c6ff","#9dffb0","#ffd34d"][((c + (t * 6 | 0)) >> 2) % 4];
+  if (chh === "o") return "#9dffb0";
+  return "#c9d3e3";
+}
+function ghostColor(chh, r){
+  if (r <= 1) return chh === "*" ? "#ffffff" : "#ff4d5e";
+  if (chh === "o") return "#5a6b8c";
+  if (chh === "(" && r === 4 || chh === ")" && r === 4) return "#ff8fa8";
+  return "#eef2ff";
+}
+
+function drawDuck(){
+  const k = t - duck.t0;
+  const rise = k < 2 ? 1 - Math.pow(1 - k / 2, 3) : k > 8 ? Math.max(0, 1 - (k - 8) / 2) : 1;
+  const Hp = Math.min(H * 0.42, W * 0.5), Wp = Hp * 1.25;
+  const baseY = groundRow * ch;
+  const left = W * 0.74 - Wp / 2;
+  const top = baseY - Hp * rise + Math.sin(t * 2) * Hp * 0.02;
+  const c0 = Math.max(0, Math.floor(left / cw)), c1 = Math.min(cols - 1, Math.ceil((left + Wp) / cw));
+  const r0 = Math.max(0, Math.floor(top / ch)), r1 = Math.min(groundRow - 1, Math.ceil((top + Hp) / ch));
+  const inE = (X, Y, x0, y0, rx, ry) => ((X - x0) / rx) ** 2 + ((Y - y0) / ry) ** 2 <= 1;
+  const isBeak = (X, Y) => inE(X, Y, 0.47, 0.33, 0.12, 0.06);
+  const isBody = (X, Y) => inE(X, Y, 0.2, 0.27, 0.22, 0.22) || inE(X, Y, -0.08, 0.7, 0.5, 0.27) || inE(X, Y, -0.5, 0.5, 0.12, 0.1);
+  const toXY = (c, r) => [((c + 0.5) * cw - left) / Hp - 0.62, ((r + 0.5) * ch - top) / Hp];
+  for (let r = r0; r <= r1; r++){
+    for (let c = c0; c <= c1; c++){
+      const [X, Y] = toXY(c, r);
+      let chr = null, col;
+      if (isBeak(X, Y)){ chr = "="; col = "#ff8f2e"; }
+      else if (inE(X, Y, 0.25, 0.21, 0.045, 0.05)){ chr = "@"; col = "#151008"; }
+      else if (inE(X, Y, 0.26, 0.195, 0.015, 0.018)){ chr = "o"; col = "#ffffff"; }
+      else if (isBody(X, Y)){
+        const [Xl, Yl] = toXY(c - 1, r), [Xr, Yr] = toXY(c + 1, r), [Xu, Yu] = toXY(c, r - 1), [Xd, Yd] = toXY(c, r + 1);
+        const edge = !isBody(Xl, Yl) || !isBody(Xr, Yr) || !isBody(Xu, Yu) || !isBody(Xd, Yd);
+        const b = Math.max(0, Math.min(1, 1.05 - Math.hypot(X + 0.2, Y - 0.12) * 0.9));
+        if (edge){ chr = "#"; col = "#c98a00"; }
+        else if (inE(X, Y, -0.12, 0.66, 0.26, 0.12) && !inE(X, Y, -0.1, 0.63, 0.22, 0.08)){ chr = "~"; col = "#d99c00"; }
+        else { chr = RAMP[Math.min(RAMP.length - 1, (b * RAMP.length) | 0)]; col = `hsl(50,100%,${(45 + b * 25) | 0}%)`; }
+      }
+      if (chr) put(c, r, -45, chr, col, 0, 0);
+    }
+  }
+  if (rise > 0.05) for (let c = c0 - 3; c <= c1 + 3; c++) put(c, groundRow, -44, ((c + (t * 4 | 0)) % 3) ? "~" : "-", "#5ab4ff", 0, 0);
+}
+
+/* ---------------- 렌더 루프 ---------------- */
+let last = performance.now(), dragging = false;
+
+function frame(now){
+  requestAnimationFrame(frame);
+  if (now - last < 1000 / 31) return;
+  const dt = Math.min(0.1, (now - last) / 1000);
+  last = now; t += dt;
+
+  // 잠들기 (45초 동안 아무 입력이 없으면)
+  if (!sleeping && t - lastInput > 45 && !document.hidden){ sleeping = true; }
+
+  // 회전
+  if (!dragging){
+    if (focus){
+      angle += wrapAngle(focus.target - angle) * Math.min(1, dt * 3.5);
+      if (t > focus.until){ focus = null; vel = 0; }
+    } else {
+      const target = sleeping ? CONFIG.SPIN * 0.25 * spinDir : CONFIG.SPIN * spinDir;
+      vel += (target - vel) * Math.min(1, dt * 1.2);
+      angle += vel * dt;
+    }
+  }
+  // 빙글빙글 이스터에그: 4초 안에 3바퀴 이상
+  const dA = Math.abs(angle - prevAngle); prevAngle = angle;
+  if (dragging || Math.abs(vel) > 1.2) spinLog.push([t, dA]);
+  while (spinLog.length && spinLog[0][0] < t - 4) spinLog.shift();
+  if (t > swayUntil && spinLog.reduce((s, x) => s + x[1], 0) > TAU * 3){
+    spinLog.length = 0; rainbowUntil = swayUntil = t + 6;
+    egg("spin", "🌀 Too much spinning! The tree is dizzy");
+  }
+  sway = t < swayUntil ? Math.sin(t * 9) * scale * 0.04 * (swayUntil - t) / 6 : 0;
+
+  ca = Math.cos(angle); sa = Math.sin(angle);
+  stepActors(dt);
+  stepParticles(dt);
+
+  depth.fill(-1e9); chars.fill(undefined); owner.fill(0); glow.fill(0);
+
+  // 배경
+  for (const s of bgStars){
+    const tw = Math.sin(t * s.sp + s.ph);
+    if (tw < -0.55) continue;
+    put(s.c, s.r, -100, s.ch, tw > 0.6 ? "rgba(220,230,255,.75)" : "rgba(160,180,220,.35)", 0, 0);
+  }
+  // 소원 별 (이스터에그): 하늘 한쪽에서 살짝 다르게 반짝이는 별
+  {
+    const wc = Math.round(cols * 0.18), wr = Math.round(rows * 0.47);
+    const gl = Math.sin(t * 1.7) > 0.75;
+    put(wc, wr, -80, gl ? "*" : "+", gl ? "#fff1a8" : "rgba(255,236,170,.8)", 0, gl ? 1 : 0);
+    wishHit = { x: (wc + 0.5) * cw, y: (wr + 0.5) * ch, r: Math.max(16, cw * 3) };
+  }
+  const bliz = t < blizzardUntil;
+  for (const s of snow){
+    s.y += s.v * dt * (bliz ? 3 : 1); s.x += (s.dx + (bliz ? 6 : 0)) * dt + Math.sin(t + s.v) * 0.02;
+    if (s.y > rows){ s.y = -1; s.x = Math.random() * cols; }
+    if (s.x < 0) s.x += cols; if (s.x >= cols) s.x -= cols;
+    put(s.x | 0, s.y | 0, -90, s.ch, "rgba(255,255,255,.55)", 0, 0);
+    if (bliz){ put(((s.x + cols / 2) % cols) | 0, ((s.y * 1.7) % rows) | 0, 0.99, "*", "rgba(255,255,255,.8)", 0, 0); }
+  }
+
+  // 달
+  moonHit = null;
+  if (LEVEL >= 1){
+    const mc = Math.max(2, Math.round(cols * 0.07)), mr = Math.max(Math.ceil(165 / ch), Math.round(rows * 0.2));
+    sprite(t < moonFullUntil ? FULLMOON : CRESCENT, mc, mr, -85, moonColor, 1);
+    moonHit = { x: (mc + 5) * cw, y: (mr + 3.5) * ch, r: Math.max(30, 6 * cw) };
+  }
+  drawParticles();
+  if (santa.active) sprite(SANTA, Math.round(santa.x), Math.round(rows * 0.13 + Math.sin(t * 2.2) * 1.2), -55, santaColor, 0);
+  if (ufo.active){
+    const ur = Math.round(rows * 0.17 + Math.sin(t * 1.5) * 1.5), uc = Math.round(ufo.x);
+    sprite(UFO, uc, ur, -58, ufoColor, 0);
+    const mid = Math.abs(uc + 9 - cols / 2) < cols * 0.18;
+    if (mid) for (let i = 0; i < 6; i++) for (let j = -i; j <= i; j++) if (Math.random() < 0.5) put(uc + 9 + j, ur + 4 + i, -59, ":", "rgba(150,255,210,.5)", 0, 0);
+  }
+  if (duck.active) drawDuck();
+  if (LEVEL >= 3){
+    for (let c = 0; c < cols; c++) put(c, groundRow, -30, groundCh[c], "rgba(230,240,255,.45)", 0, 0);
+    const hc = Math.max(0, Math.round((cx - Math.min(scale * 0.62, W * 0.46)) / cw) - 6);
+    const art = HOUSE.slice();
+    art[0] = "     " + ["( )  ", " ( ) ", "  ( )"][(t * 1.5 | 0) % 3] + "       ";
+    sprite(art, hc, groundRow - HOUSE.length, -40, houseColor, 0);
+  }
+
+  // 트리
+  const lx = -0.45, lz = 0.89, tsrc = TEXT_SRC, tl = tsrc.length, flick = (t * 2) | 0;
+  const rainbow = t < rainbowUntil, disco = t < discoUntil;
+  for (let i = 0; i < points.length; i++){
+    const p = points[i];
+    proj(p.x, p.y, p.z);
+    const nxr = p.nx * ca + p.nz * sa, nzr = -p.nx * sa + p.nz * ca;
+    let b = 0.26 + 0.62 * Math.max(0, nxr * lx + nzr * lz) + 0.16 * p.n; if (b > 1) b = 1;
+    if (sleeping) b *= 0.6;
+    let chr, col;
+    if (FILL === "text") chr = tsrc[(p.li * 7) % tl];
+    else if (FILL === "binary") chr = ((p.n * 10 + flick) | 0) % 2 ? "1" : "0";
+    else chr = RAMP[Math.min(RAMP.length - 1, (b * RAMP.length) | 0)];
+    if (p.trunk){ col = TRUNK[(b * 7.99) | 0]; if (FILL === "symbol") chr = p.n < 0.5 ? "|" : "#"; }
+    else if (p.light){
+      const on = disco ? Math.random() < 0.6 : !sleeping && Math.sin(t * 2.6 + p.ph) > -0.1;
+      col = on ? (disco ? pick(LIGHT_ON) : LIGHT_ON[p.lc]) : LIGHT_OFF[p.lc];
+      if (FILL === "symbol") chr = on ? "o" : ".";
+    } else if (rainbow || disco){
+      col = RAINBOW[((p.y * 30 + t * (disco ? 40 : 14) + p.n * 3) | 0) % 24][(b * 7.99) | 0];
+    } else col = FOL[p.hv][(b * 15.99) | 0];
+    put((PX / cw) | 0, (PY / ch) | 0, PZ, chr, col, 0, 0);
+  }
+  if (LEVEL >= 10){
+    for (const g of garland){
+      proj(g.x, g.y, g.z);
+      const lit = ((g.s * 60 - t * 8) | 0) % 5 === 0;
+      put((PX / cw) | 0, (PY / ch) | 0, PZ + 0.01, lit ? "*" : "~", lit ? "#fff6c2" : "#e8b830", 0, 0);
+    }
+  }
+
+  // 장식: 선물(ASCII) + 오너먼트(구슬 자리)
+  const blink = (t * 6 | 0) % 2 === 0;
+  for (let k = 0; k < msgs.length; k++){
+    const m = msgs[k];
+    proj(m.x, m.y, m.z);
+    const c = (PX / cw) | 0, r = (PY / ch) | 0;
+    const mine = !!(ME && m.to === ME), dim = hlMine && !!ME && !mine;
+    const hl = !!(focus && focus.id === m.id) || (mine && (hlMine || unreadIds.has(m.id)) && Math.sin(t * 4 + k) > 0.55);
+    const unreadMine = mine && unreadIds.has(m.id);
+    m._mine = mine; m._dim = dim; m._unread = unreadMine;
+    if (unreadMine && Math.random() < 0.09) parts.push({ x: c + rand(-4, 4), y: r + rand(-3, 2), vx: rand(-0.5, 0.5), vy: -rand(0.8, 2), life: 0, max: rand(0.6, 1.1), pal: ["#ffffff", "#ffe680"], spark: true, front: true });
+    else if (hlMine && mine && Math.random() < 0.06) parts.push({ x: c + rand(-4, 4), y: r + rand(-3, 2), vx: rand(-0.5, 0.5), vy: -rand(0.8, 2), life: 0, max: rand(0.6, 1.1), pal: ["#fff6c2", "#ffe680"], spark: true, front: true });
+    if (m.kind === "gift"){
+      const z = PZ + 0.02, c0 = c - 3, r0 = r - 3, body = dim ? "#2f3a34" : hl && blink ? "#ffffff" : m.col;
+      for (let gr = 0; gr < 4; gr++) for (let gc = 0; gc < 7; gc++){
+        const chh = GIFT_ART[gr][gc]; if (chh === " ") continue;
+        put(c0 + gc, r0 + gr, z, chh, (gr === 0 || gc === 3) ? (dim ? "#4a4636" : hl && blink ? "#fff" : "#ffe27a") : body, k + 1, dim ? 0 : 1);
+      }
+      m._c = c; m._r = r - 1; m._px = (c + 0.5) * cw; m._py = (r - 0.5) * ch;
+    } else {
+      const z = PZ + 0.04, c0 = c - 3, r0 = r - 2, sh = m.shade;
+      for (let gr = 0; gr < 4; gr++) for (let gc = 0; gc < 7; gc++){
+        const chh = ORN_ART[gr][gc]; if (chh === " ") continue;
+        const col = dim ? (gr === 0 ? "#4a4636" : "#33403a")
+          : gr === 0 ? (chh === "o" ? "#fff2b0" : "#e9c45a")
+          : hl && blink ? "#ffffff"
+          : chh === "'" ? "#ffffff"
+          : chh === "@" ? (gr === 1 || (gr === 2 && gc <= 2) ? sh[0] : sh[1])
+          : sh[1];
+        put(c0 + gc, r0 + gr, z, chh, col, k + 1, dim ? 0 : 1);
+      }
+      m._c = c; m._r = r; m._px = (c + 0.5) * cw; m._py = (r + 0.5) * ch;
+    }
+  }
+
+  // 지상 친구들
+  catHit = null;
+  if (cat.phase !== "off"){
+    const art = cat.phase === "sleep" ? CAT_SLEEP : CAT_WALK[(t * 6 | 0) % 2];
+    sprite(art, Math.round(cat.x), groundRow - 4, 0.9, catColor, 0);
+    if (cat.phase === "sleep") catHit = { x: (cat.x + 7) * cw, y: (groundRow - 2) * ch, r: Math.max(28, 7 * cw) };
+  }
+  if (LEVEL >= 6){
+    const leftC = Math.max(1, Math.round((cx - Math.min(scale * 0.5, W * 0.38)) / cw) - 3);
+    const rightC = Math.min(cols - 10, Math.round((cx + Math.min(scale * 0.56, W * 0.36)) / cw));
+    for (let i = 0; i < 2; i++){
+      const art = PENGUIN.slice();
+      if (((t * 0.8 + i * 1.7) % 4) < 0.18) art[1] = " (-> ";
+      const hop = Math.sin(t * 3 + i * 2) > 0.85 ? 1 : 0;
+      sprite(art, leftC + i * 6 + Math.round(Math.sin(t * 1.4 + i * 2) * 1.2), groundRow - 4 - hop, 0.8, penguinColor, 0);
+    }
+    sprite(SNOWMAN, rightC, groundRow - 4, 0.8, snowmanColor, 0);
+  }
+  if (ghost.phase !== "off"){
+    const gy = Math.round(ghost.y + Math.sin(t * 2.5) * 1);
+    sprite(GHOST[(t * 3 | 0) % 2], Math.round(ghost.x), gy, 0.95, ghostColor, 0);
+    if (ghost.phase === "wave") bubbles.push({ x: (ghost.x + 5) * cw, y: (gy - 1) * ch, text: "Merry Christmas~! 👋", until: t + 0.05 });
+  }
+
+  // 별 (레벨 10에서는 로고)
+  proj(0, -0.01, 0);
+  starHit = { x: PX, y: PY, r: Math.max(26, 5 * cw) };
+  if (LEVEL >= 10){
+    const sx = cols >= LOGO[0].length * 2 + 60 ? 2 : 1, w = LOGO[0].length * sx;
+    const c0 = ((PX / cw) | 0) - (w >> 1), r0 = ((PY / ch) | 0) - 3;
+    for (let sr = 0; sr < 5; sr++) for (let sc = 0; sc < w; sc++){
+      if (LOGO[sr][(sc / sx) | 0] === " ") continue;
+      const wave = Math.sin(t * 4 - sc * 0.25 + sr * 0.5);
+      put(c0 + sc, r0 + sr, 1e6, "@", sleeping ? "#6d5f2a" : wave > 0.6 ? "#fffbe0" : wave > -0.2 ? "#ffe066" : "#ffc21a", 0, sleeping ? 0 : 1);
+    }
+  } else {
+    const c0 = ((PX / cw) | 0) - 4, r0 = ((PY / ch) | 0) - 4;
+    for (let sr = 0; sr < STAR_ART.length; sr++){
+      const line = STAR_ART[sr];
+      for (let sc = 0; sc < line.length; sc++){
+        if (line[sc] === " ") continue;
+        const ph = (sr * 31 + sc * 17 + ((t * 5) | 0)) % STAR_CH.length;
+        put(c0 + sc, r0 + sr, 1e6, STAR_CH[ph], sleeping ? "#6d5f2a" : STAR_COL[Math.min(3, Math.abs(sr - 2) + (ph === 0 ? 0 : 1)) % 4], 0, sleeping ? 0 : 1);
+      }
+    }
+  }
+  if (sleeping && Math.random() < dt * 1.2) spawnZ(PX / cw + 5, PY / ch - 4);
+
+  // ---- 그리기 ----
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+  if (LEVEL >= 1 && moonHit){
+    const mg = ctx.createRadialGradient(moonHit.x, moonHit.y, 2, moonHit.x, moonHit.y, moonHit.r * 2.4);
+    mg.addColorStop(0, "rgba(255,240,190,.22)"); mg.addColorStop(1, "rgba(255,240,190,0)");
+    ctx.fillStyle = mg; ctx.fillRect(moonHit.x - moonHit.r * 2.4, moonHit.y - moonHit.r * 2.4, moonHit.r * 4.8, moonHit.r * 4.8);
+  }
+  const g = ctx.createRadialGradient(cx, cy, scale * 0.05, cx, cy, scale * 0.75);
+  g.addColorStop(0, `rgba(${LEVEL >= 10 ? "255,210,90" : "60,255,130"},${sleeping ? 0.04 : 0.10})`); g.addColorStop(1, "rgba(60,255,130,0)");
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+
+  ctx.font = `${fs}px "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace`;
+  ctx.textBaseline = "top";
+  let lastCol = null, drawn = 0;
+  const glowCells = [];
+  for (let i = 0; i < NCELL; i++){
+    const chh = chars[i]; if (chh === undefined || chh === " ") continue;
+    if (glow[i]){ glowCells.push(i); continue; }
+    if (depth[i] > -50) drawn++;
+    const col = colors[i];
+    if (col !== lastCol){ ctx.fillStyle = col; lastCol = col; }
+    ctx.fillText(chh, (i % cols) * cw, ((i / cols) | 0) * ch);
+  }
+  lettersDrawn = drawn;
+
+  // 보이는 장식만 클릭 대상 + 구슬 그리기
+  hits = [];
+  for (let k = 0; k < msgs.length; k++){
+    const m = msgs[k];
+    if (m._c < 0 || m._r < 0 || m._c >= cols || m._r >= rows || owner[m._r * cols + m._c] !== k + 1) continue;
+    hits.push({ x: m._px, y: m._py, k, r: Math.max(22, cw * 4) });
+    if (m._dim) continue;
+    const boost = (hlMine && m._mine) || m._unread ? 1.7 : 1;
+    const rad = Math.max(14, fs * (m.kind === "gift" ? 4 : 3.8)) * boost, hg = ctx.createRadialGradient(m._px, m._py, 0, m._px, m._py, rad);
+    hg.addColorStop(0, (boost > 1 ? "#ffe680" : m.col) + (boost > 1 ? "90" : "78")); hg.addColorStop(1, m.col + "00");
+    ctx.globalAlpha = 0.75 + 0.25 * Math.sin(t * 3 + k);
+    ctx.fillStyle = hg; ctx.fillRect(m._px - rad, m._py - rad, rad * 2, rad * 2);
+  }
+  ctx.globalAlpha = 1;
+
+  ctx.font = `700 ${fs}px "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace`;
+  ctx.shadowBlur = Math.max(6, fs * 0.9);
+  for (const i of glowCells){
+    const col = colors[i];
+    ctx.shadowColor = col; ctx.fillStyle = col;
+    ctx.fillText(chars[i], (i % cols) * cw, ((i / cols) | 0) * ch);
+  }
+  ctx.shadowBlur = 0;
+
+  // 말풍선
+  ctx.font = `700 ${Math.max(12, fs + 4)}px "JetBrains Mono", "Nanum Gothic Coding", ui-monospace, monospace`;
+  ctx.textBaseline = "middle";
+  for (let i = bubbles.length - 1; i >= 0; i--){
+    const b = bubbles[i];
+    if (t > b.until){ bubbles.splice(i, 1); continue; }
+    const tw = ctx.measureText(b.text).width, bw = tw + 22, bh = Math.max(26, fs + 18);
+    const bx = Math.max(6, Math.min(W - bw - 6, b.x - bw / 2)), by = b.y - bh - 8;
+    ctx.fillStyle = "rgba(255,255,255,.95)";
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(bx, by, bw, bh, 12) : ctx.rect(bx, by, bw, bh); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(b.x - 6, by + bh); ctx.lineTo(b.x + 6, by + bh); ctx.lineTo(b.x, by + bh + 8); ctx.fill();
+    ctx.fillStyle = "#1a1d2a"; ctx.fillText(b.text, bx + 11, by + bh / 2 + 1);
+  }
+  ctx.textBaseline = "top";
+}
+
+/* ---------------- 레벨 / 이벤트 ---------------- */
+function updateLevel(initial){
+  const m = Math.floor(msgs.length / CONFIG.PER_LEVEL);
+  LEVEL = Math.min(MAX_LEVEL, m);
+  document.body.classList.toggle("night", LEVEL >= 1);
+  if (initial){ ackMilestone = m; return; }
+  if (m > ackMilestone){ ackMilestone = m; celebrate(m); }
+}
+function showBanner(title, sub, text, ms = 4500){
+  $("#bannerTitle").textContent = title; $("#bannerSub").textContent = sub; $("#bannerText").textContent = text;
+  const el = $("#banner"); el.classList.add("on");
+  clearTimeout(showBanner._t); showBanner._t = setTimeout(() => el.classList.remove("on"), ms);
+}
+function celebrate(m){
+  const n = m * CONFIG.PER_LEVEL, lv = Math.min(m, MAX_LEVEL), info = LEVELS[lv];
+  showBanner("LEVEL UP!", `${n} decorations · LEVEL ${lv}${m > MAX_LEVEL ? "+" : ""}`,
+    m > MAX_LEVEL ? `🎉 ${n} decorations! Celebration fireworks` : `${info.icon} ${info.text}`);
+  proj(0, 0, 0);
+  burst(PX / cw, PY / ch, 70, FW_COLORS[1], rows * 0.14);
+  const first = { 2: () => nextMeteor = t + 0.8, 4: () => summon("cat"), 5: () => summon("santa"), 7: () => summon("duck"), 8: () => summon("ufo"), 9: () => summon("ghost") };
+  if (first[m]) first[m]();
+  if (m >= 10){ showRockets += m > MAX_LEVEL ? 14 : 10; nextShowRocket = t + 0.6; setTimeout(() => launchRocket("heart"), 900); setTimeout(() => launchRocket("star"), 1700); }
+  Music.fanfare();
+}
+
+/* ---------------- 이스터에그 ---------------- */
+const EGGS = [
+  ["spin",   "🌀", "Dizzy Tree",     "Spin the tree like crazy: 3 full turns within 4 seconds."],
+  ["star",   "⭐", "Star Popper",    "Tap the star on top 5 times, fast."],
+  ["moon",   "🌕", "Full Moon",      "Tap the moon (Level 1+)."],
+  ["cat",    "🐈", "Rude Awakening", "Tap the cat while it's napping (Level 4+)."],
+  ["sleep",  "😴", "Sleepy Tree",    "Leave the tree alone for 45 seconds, then wake it up."],
+  ["konami", "🕺", "Disco Mode",     "Type ↑ ↑ ↓ ↓ ← → ← → B A on your keyboard."],
+  ["word",   "💬", "Secret Words",   "Put santa, cat, duck, ufo, ghost, firework, love or snow in your message."],
+  ["xmas",   "🎄", "Christmas Day",  "Visit on December 24 or 25."],
+  ["mail",   "📮", "Mail Storm",     "Tap the Mailbox button 5 times in a row."],
+  ["wish",   "🌠", "Wishing Star",   "Find the one special star in the sky and tap it."],
+];
+const EGG_TOTAL = EGGS.length;
+const EGG_HINTS = {
+  spin: "Spin the tree round and round?", star: "Poke the star a few times?", moon: "Touch the moon?",
+  cat: "Bother a napping cat?", sleep: "Leave the tree alone for a while?", konami: "↑ ↑ ↓ ↓ ← → ← → B A?",
+  word: "A magic word in your message?", xmas: "Come back on Christmas?",
+  mail: "Knock on the mailbox again and again?", wish: "One star in the sky looks a little different?",
+};
+let eggListOpen = false;
+let eggs = new Set();
+const EGG_KEY = "mytree.eggs.v2";   // 키를 바꾸면 이스터에그 기록이 초기화돼요
+try { localStorage.removeItem("mytree.eggs"); } catch(_){}
+try { eggs = new Set(JSON.parse(localStorage.getItem(EGG_KEY) || "[]")); } catch(_){}
+function egg(id, msg){
+  const isNew = !eggs.has(id);
+  eggs.add(id);
+  try { localStorage.setItem(EGG_KEY, JSON.stringify([...eggs])); } catch(_){}
+  toast(isNew ? `🥚 Easter egg found! (${eggs.size}/${EGG_TOTAL}) ${msg}` : msg, 3200);
+  renderGuide();
+}
+function wake(){
+  lastInput = t;
+  if (sleeping){ sleeping = false; egg("sleep", "😳 You woke up the sleepy tree!"); }
+}
+const KONAMI = ["arrowup","arrowup","arrowdown","arrowdown","arrowleft","arrowright","arrowleft","arrowright","b","a"];
+let konamiIdx = 0;
+document.addEventListener("keydown", e => {
+  wake();
+  const k = (e.key || "").toLowerCase();
+  konamiIdx = k === KONAMI[konamiIdx] ? konamiIdx + 1 : (k === KONAMI[0] ? 1 : 0);
+  if (konamiIdx === KONAMI.length){
+    konamiIdx = 0; discoUntil = t + 12; summon("fireworks");
+    egg("konami", "🕺 Disco tree mode!");
+  }
+});
+function checkWords(text){
+  const rules = [
+    [/(눈이?\s?(와|온다|내려)|함박눈|첫눈|\bsnow)/i, () => { blizzardUntil = t + 10; }, "❄️ Blizzard incoming!"],
+    [/(산타|\bsanta\b)/i, () => summon("santa"), "🛷 You summoned Santa!"],
+    [/(고양이|야옹|냥|\bcats?\b|\bmeow|\bkitty)/i, () => summon("cat"), "🐈 Here comes the cat!"],
+    [/(오리|러버덕|\bduck)/i, () => summon("duck"), "🦆 Quack!"],
+    [/(외계인|우주선|\bufo\b|\baliens?\b)/i, () => summon("ufo"), "🛸 Spaceship incoming!"],
+    [/(유령|귀신|\bghost|\bboo\b)/i, () => summon("ghost"), "👻 A ghostly guest appears!"],
+    [/(불꽃|폭죽|\bfirework)/i, () => summon("fireworks"), "🎆 Fireworks!"],
+    [/(사랑|\blove|♥|❤)/i, () => { launchRocket("heart"); setTimeout(() => launchRocket("heart"), 700); }, "💖 Heart fireworks!"],
+  ];
+  for (const [re, fn, msg] of rules){ if (re.test(text)){ fn(); setTimeout(() => egg("word", `${msg} (secret word)`), 900); return; } }
+}
+function checkDate(){
+  const d = new Date();
+  if (d.getMonth() === 11 && (d.getDate() === 24 || d.getDate() === 25)){
+    blizzardUntil = t + 8;
+    setTimeout(() => egg("xmas", d.getDate() === 25 ? "🎄 It's Christmas Day!" : "🎄 It's Christmas Eve!"), 1500);
+  }
+}
+
+/* ---------------- 가이드 패널 ---------------- */
+function renderGuide(){
+  const el = $("#gLevel"); if (!el) return;
+  const next = (LEVEL + 1) * CONFIG.PER_LEVEL;
+  el.textContent = LEVEL >= MAX_LEVEL ? `Level ${LEVEL}/${MAX_LEVEL} · MAX` : `Level ${LEVEL}/${MAX_LEVEL} · next at ${next} decorations`;
+  $("#gEggs").textContent = `Found ${eggs.size}/${EGG_TOTAL}`;
+  const tog = $("#gEggTog"), ul = $("#gEggList");
+  tog.disabled = eggs.size === 0;
+  if (!eggs.size) eggListOpen = false;
+  tog.textContent = `${eggListOpen ? "▾" : "▸"} ${eggListOpen ? "Hide" : "Show"} found eggs`;
+  tog.setAttribute("aria-expanded", String(eggListOpen));
+  ul.classList.toggle("hidden", !eggListOpen);
+  ul.innerHTML = "";
+  for (const [id, icon] of EGGS){
+    if (!eggs.has(id)) continue;
+    const li = document.createElement("li");
+    li.innerHTML = '<span class="mk"></span><span class="tx"></span>';
+    li.querySelector(".mk").textContent = icon;
+    li.querySelector(".tx").textContent = EGG_HINTS[id];
+    ul.appendChild(li);
+  }
+}
+
+function setGuide(open){
+  $("#guide").classList.toggle("hidden", !open);
+  $("#btnGuide").classList.toggle("on", open);
+}
+$("#btnGuide").onclick = e => { e.stopPropagation(); setGuide($("#guide").classList.contains("hidden")); };
+$("#guideClose").onclick = () => setGuide(false);
+$("#gEggTog").onclick = () => { eggListOpen = !eggListOpen; renderGuide(); };
+
+/* ---------------- HUD ---------------- */
+function updateHud(){
+  const deg = ((angle * 180 / Math.PI) % 360 + 360) % 360;
+  const orn = msgs.filter(m => m.kind !== "gift").length, gifts = msgs.length - orn;
+  const nextN = CONFIG.PER_LEVEL - (msgs.length % CONFIG.PER_LEVEL);
+  $("#hud").innerHTML =
+    `<span class="t">@my.tree</span>\nrotation  ${deg.toFixed(2)}°\nlights    ${LIGHT_COUNT}\nletters   ${lettersDrawn.toLocaleString()}\nwishes    ${msgs.length}  (🔴${orn} 🎁${gifts})\n` +
+    `<span class="lv">level     ${LEVEL}/${MAX_LEVEL}${LEVEL >= MAX_LEVEL ? " MAX" : ""}\nnext 🎉   +${nextN}\neggs 🥚   ${eggs.size}/${EGG_TOTAL}</span>`;
+}
+
+/* ---------------- 인사말 타이핑 ---------------- */
+(function typer(){
+  const el = $("#greetText");
+  let i = 0, dir = 1;
+  (function step(){
+    const full = sleeping ? "zzz..." : CONFIG.GREET;
+    if (i > full.length) i = full.length;
+    i += dir; el.textContent = full.slice(0, Math.max(0, i));
+    let wait = dir > 0 ? 130 : 45;
+    if (i >= full.length){ dir = -1; wait = 3200; } else if (i <= 0){ dir = 1; wait = 700; }
+    setTimeout(step, wait);
+  })();
+})();
+
+/* ---------------- 음악: 로파이 캐럴 (WebAudio로 직접 연주 · 퍼블릭 도메인 곡) ---------------- */
+const Music = (() => {
+  const PC = { C:0, D:2, E:4, F:5, G:7, A:9, B:11 };
+  const midi = n => { const m = /^([A-G])(#|b)?(\d)$/.exec(n); return 12 * (+m[3] + 1) + PC[m[1]] + (m[2] === "#" ? 1 : m[2] === "b" ? -1 : 0); };
+  const hz = m => 440 * Math.pow(2, (m - 69) / 12);
+  // 로파이 느낌의 7th/9th 보이싱 (루트 없는 보이싱 + 베이스 루트)
+  const CHORDS = {
+    Cmaj7: { root: 36, v: [52, 55, 59, 62] },
+    Am7:   { root: 45, v: [55, 60, 64, 67] },
+    Dm7:   { root: 38, v: [53, 57, 60, 64] },
+    G7:    { root: 43, v: [53, 59, 64, 69] },
+    Fmaj7: { root: 41, v: [57, 60, 64, 67] },
+    Em7:   { root: 40, v: [55, 59, 62, 66] },
+  };
+  function mel(str){
+    const tk = str.trim().split(/\s+/), out = []; let b = 0;
+    for (let i = 0; i < tk.length; i += 2){ const d = +tk[i + 1]; if (tk[i] !== "R") out.push({ b, m: midi(tk[i]) - 12, d, type: "mel" }); b += d; }
+    return { out, len: b };
+  }
+  function chords(list){
+    const out = []; let b = 0;
+    for (const [name, d] of list){ out.push({ b, c: CHORDS[name], d, type: "chord" }); b += d; }
+    return { out, len: b };
+  }
+  const bars = (arr, beats) => arr.flatMap(x => Array.isArray(x) ? x : [[x, beats]]);
+  const SONGS = [
+    { title: "Jingle Bells (lofi)", bpm: 84, meter: 4, drums: true,
+      mel: mel("E5 1 E5 1 E5 2 E5 1 E5 1 E5 2 E5 1 G5 1 C5 1.5 D5 0.5 E5 4 F5 1 F5 1 F5 1.5 F5 0.5 F5 1 E5 1 E5 1 E5 0.5 E5 0.5 E5 1 D5 1 D5 1 E5 1 D5 2 G5 2 E5 1 E5 1 E5 2 E5 1 E5 1 E5 2 E5 1 G5 1 C5 1.5 D5 0.5 E5 4 F5 1 F5 1 F5 1.5 F5 0.5 F5 1 E5 1 E5 1 E5 0.5 E5 0.5 G5 1 G5 1 F5 1 D5 1 C5 4"),
+      ch: chords(bars(["Cmaj7","Am7","Dm7","G7","Fmaj7","Cmaj7","Dm7","G7","Cmaj7","Am7","Dm7","G7","Fmaj7","Cmaj7","G7","Cmaj7"], 4)) },
+    { title: "Silent Night (lofi)", bpm: 66, meter: 3, drums: false,
+      mel: mel("G5 1.5 A5 0.5 G5 1 E5 3 G5 1.5 A5 0.5 G5 1 E5 3 D6 2 D6 1 B5 3 C6 2 C6 1 G5 3 A5 2 A5 1 C6 1.5 B5 0.5 A5 1 G5 1.5 A5 0.5 G5 1 E5 3 A5 2 A5 1 C6 1.5 B5 0.5 A5 1 G5 1.5 A5 0.5 G5 1 E5 3 D6 2 D6 1 F6 1.5 D6 0.5 B5 1 C6 3 E6 3 C6 1.5 G5 0.5 E5 1 G5 1.5 F5 0.5 D5 1 C5 6"),
+      ch: chords(bars(["Cmaj7","Cmaj7","Cmaj7","Cmaj7","G7","G7","Cmaj7","Cmaj7","Fmaj7","Fmaj7","Cmaj7","Cmaj7","Fmaj7","Fmaj7","Cmaj7","Am7","G7","G7","Cmaj7","Am7","Fmaj7","G7","Cmaj7","Cmaj7"], 3)) },
+    { title: "Deck the Halls (lofi)", bpm: 78, meter: 4, drums: true,
+      mel: mel("G5 1.5 F5 0.5 E5 1 D5 1 C5 1 D5 1 E5 1 C5 1 D5 0.5 E5 0.5 F5 0.5 D5 0.5 E5 1.5 D5 0.5 C5 1 B4 1 C5 2 G5 1.5 F5 0.5 E5 1 D5 1 C5 1 D5 1 E5 1 C5 1 D5 0.5 E5 0.5 F5 0.5 D5 0.5 E5 1.5 D5 0.5 C5 1 B4 1 C5 2 D5 1.5 E5 0.5 F5 1 D5 1 E5 1.5 F5 0.5 G5 1 D5 1 E5 0.5 F#5 0.5 G5 1 A5 0.5 B5 0.5 C6 1 B5 1 A5 1 G5 2 G5 1.5 F5 0.5 E5 1 D5 1 C5 1 D5 1 E5 1 C5 1 A5 0.5 A5 0.5 A5 0.5 A5 0.5 G5 1.5 F5 0.5 E5 1 D5 1 C5 2"),
+      ch: chords(bars(["Cmaj7","Am7",[["Dm7",2],["G7",2]],"Cmaj7","Cmaj7","Am7",[["Dm7",2],["G7",2]],"Cmaj7","G7","Cmaj7","Em7","G7","Cmaj7","Am7","Fmaj7",[["G7",2],["Cmaj7",2]]], 4)) },
+  ];
+  for (const s of SONGS){
+    s.events = [...s.mel.out, ...s.ch.out];
+    const body = Math.max(s.mel.len, s.ch.len);
+    if (s.drums){
+      for (let b = 0; b < body; b += 4){
+        s.events.push({ b, type: "kick" }, { b: b + 2.5, type: "kick", soft: true }, { b: b + 1, type: "snare" }, { b: b + 3, type: "snare" });
+        for (let h = 0; h < 4; h += 0.5) s.events.push({ b: b + h, type: "hat" });
+      }
+    }
+    s.len = body + s.meter;   // 곡 사이 한 마디 쉼
+    s.events.sort((a, b) => a.b - b.b);
+  }
+  const SWING = 0.09; // 8분음표 뒷박을 살짝 늦춰서 그루브
+
+  let ac, master, bus, verb, noiseBuf, crackleSrc, on = false, timer = null, si = 0, ei = 0, t0 = 0;
+  function makeNoise(sec){ const b = ac.createBuffer(1, ac.sampleRate * sec, ac.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; return b; }
+  function init(){
+    if (ac) return;
+    ac = new (window.AudioContext || window.webkitAudioContext)();
+    master = ac.createGain(); master.gain.value = 0;
+    // 테이프처럼 먹먹한 톤 + 살짝 흔들리는 필터
+    const tone = ac.createBiquadFilter(); tone.type = "lowpass"; tone.frequency.value = 2600; tone.Q.value = 0.4;
+    const lfo = ac.createOscillator(), lfoG = ac.createGain(); lfo.frequency.value = 0.18; lfoG.gain.value = 500;
+    lfo.connect(lfoG); lfoG.connect(tone.frequency); lfo.start();
+    const comp = ac.createDynamicsCompressor(); comp.threshold.value = -20; comp.ratio.value = 3;
+    master.connect(tone); tone.connect(comp); comp.connect(ac.destination);
+    // 리버브
+    verb = ac.createConvolver();
+    const len = ac.sampleRate * 2.4, ir = ac.createBuffer(2, len, ac.sampleRate);
+    for (let c = 0; c < 2; c++){ const d = ir.getChannelData(c); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.6); }
+    verb.buffer = ir;
+    const wet = ac.createGain(); wet.gain.value = 0.28; verb.connect(wet); wet.connect(master);
+    bus = ac.createGain(); bus.connect(master); bus.connect(verb);
+    noiseBuf = makeNoise(1);
+  }
+  function startCrackle(){
+    if (crackleSrc) return;
+    const len = ac.sampleRate * 4, b = ac.createBuffer(1, len, ac.sampleRate), d = b.getChannelData(0);
+    for (let i = 0; i < len; i++){
+      let v = (Math.random() * 2 - 1) * 0.012;                       // 잔잔한 히스
+      if (Math.random() < 0.0004) v += (Math.random() * 2 - 1) * 0.6; // 탁탁 튀는 소리
+      d[i] = v;
+    }
+    crackleSrc = ac.createBufferSource(); crackleSrc.buffer = b; crackleSrc.loop = true;
+    const f = ac.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = 2500; f.Q.value = 0.6;
+    const g = ac.createGain(); g.gain.value = 0.35;
+    crackleSrc.connect(f); f.connect(g); g.connect(master); crackleSrc.start();
+  }
+  // 로즈(일렉 피아노) 느낌의 음색
+  function keys(time, m, dur, vol){
+    const f = hz(m), g = ac.createGain(), end = time + dur + 0.9;
+    g.gain.setValueAtTime(0, time);
+    g.gain.linearRampToValueAtTime(vol, time + 0.012);
+    g.gain.exponentialRampToValueAtTime(vol * 0.35, time + 0.5);
+    g.gain.setTargetAtTime(0.0001, time + dur, 0.25);
+    const trem = ac.createGain(), tl = ac.createOscillator(), tlg = ac.createGain();
+    tl.frequency.value = 4.5; tlg.gain.value = 0.12; tl.connect(tlg); tlg.connect(trem.gain); trem.gain.value = 0.88;
+    g.connect(trem); trem.connect(bus);
+    tl.start(time); tl.stop(end);
+    [[1, 1, "sine", 0], [1, 0.18, "triangle", 7], [2, 0.12, "sine", -4], [4, 0.025, "sine", 0]].forEach(([mul, a, type, det]) => {
+      const o = ac.createOscillator(), og = ac.createGain();
+      o.type = type; o.frequency.value = f * mul; o.detune.value = det + (Math.random() - 0.5) * 6; og.gain.value = a;
+      o.connect(og); og.connect(g); o.start(time); o.stop(end);
+    });
+  }
+  function bassNote(time, m, dur){
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = "sine"; o.frequency.value = hz(m);
+    g.gain.setValueAtTime(0, time); g.gain.linearRampToValueAtTime(0.2, time + 0.03);
+    g.gain.setTargetAtTime(0.0001, time + dur * 0.85, 0.12);
+    o.connect(g); g.connect(master); o.start(time); o.stop(time + dur + 0.6);
+  }
+  function kick(time, soft){
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.frequency.setValueAtTime(110, time); o.frequency.exponentialRampToValueAtTime(42, time + 0.14);
+    g.gain.setValueAtTime(soft ? 0.32 : 0.5, time); g.gain.exponentialRampToValueAtTime(0.001, time + 0.32);
+    o.connect(g); g.connect(master); o.start(time); o.stop(time + 0.35);
+  }
+  function hit(time, type, freq, vol, decay){
+    const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+    s.buffer = noiseBuf; f.type = type; f.frequency.value = freq;
+    g.gain.setValueAtTime(vol, time); g.gain.exponentialRampToValueAtTime(0.001, time + decay);
+    s.connect(f); f.connect(g); g.connect(type === "bandpass" ? bus : master);
+    s.start(time, Math.random() * 0.5); s.stop(time + decay + 0.02);
+  }
+  function schedule(){
+    const now = ac.currentTime;
+    let s = SONGS[si], spb = 60 / s.bpm;
+    while (true){
+      const ev = s.events[ei];
+      if (!ev){
+        const end = t0 + s.len * spb;
+        if (end < now + 0.4){ t0 = end; si = (si + 1) % SONGS.length; ei = 0; s = SONGS[si]; spb = 60 / s.bpm; label(); continue; }
+        break;
+      }
+      const frac = ev.b - Math.floor(ev.b);
+      const time = t0 + (ev.b + (Math.abs(frac - 0.5) < 1e-6 ? SWING : 0)) * spb + (ev.type === "mel" ? Math.random() * 0.012 : 0);
+      if (time > now + 0.4) break;
+      if (time >= now - 0.05){
+        if (ev.type === "mel") keys(time, ev.m, ev.d * spb, 0.15 + Math.random() * 0.03);
+        else if (ev.type === "chord"){
+          ev.c.v.forEach((m, i) => keys(time + i * 0.018, m, ev.d * spb * 0.95, 0.05));
+          bassNote(time, ev.c.root, ev.d * spb);
+        }
+        else if (ev.type === "kick") kick(time, ev.soft);
+        else if (ev.type === "snare") hit(time, "bandpass", 1600, 0.16, 0.18);
+        else if (ev.type === "hat") hit(time, "highpass", 7500, frac ? 0.018 : 0.03, 0.04);
+      }
+      ei++;
+    }
+  }
+  function label(){
+    const b = $("#btnMusic");
+    b.textContent = on ? `🔊 ♪ ${SONGS[si].title}` : "🔇 Play music";
+    b.classList.toggle("on", on);
+  }
+  function start(){
+    init(); ac.resume(); startCrackle();
+    on = true; ei = 0; t0 = ac.currentTime + 0.2;
+    master.gain.cancelScheduledValues(ac.currentTime);
+    master.gain.setValueAtTime(master.gain.value, ac.currentTime);
+    master.gain.linearRampToValueAtTime(0.7, ac.currentTime + 1.2);
+    clearInterval(timer); timer = setInterval(schedule, 80); schedule();
+    label();
+  }
+  function stop(){
+    on = false; clearInterval(timer);
+    if (ac){ master.gain.cancelScheduledValues(ac.currentTime); master.gain.setValueAtTime(master.gain.value, ac.currentTime); master.gain.linearRampToValueAtTime(0, ac.currentTime + 0.4); }
+    si = (si + 1) % SONGS.length;
+    label();
+  }
+  function fanfare(){
+    if (!on || !ac) return;
+    const n = ac.currentTime + 0.05;
+    [60, 64, 67, 71, 74].forEach((m, i) => keys(n + i * 0.11, m + 12, 0.8, 0.09));
+  }
+  document.addEventListener("visibilitychange", () => {
+    if (!ac) return;
+    if (document.hidden) ac.suspend(); else if (on) ac.resume();
+  });
+  return { start, stop, fanfare, get on(){ return on; }, label, _songs: SONGS };
+})();
+
+
+$("#btnMusic").onclick = e => {
+  e.stopPropagation();
+  if (Music.on){ Music.stop(); localStorage.setItem("mytree.music", "off"); }
+  else { Music.start(); localStorage.setItem("mytree.music", "on"); }
+};
+function firstGesture(e){
+  ["pointerdown","keydown","touchend"].forEach(ev => document.removeEventListener(ev, firstGesture, true));
+  if (e.target && e.target.closest && e.target.closest("#btnMusic")) return;
+  if (localStorage.getItem("mytree.music") !== "off" && !Music.on) Music.start();
+}
+["pointerdown","keydown","touchend"].forEach(ev => document.addEventListener(ev, firstGesture, true));
+
+/* ---------------- 입력: 드래그·휠로 회전 / 클릭 ---------------- */
+let downX = 0, downY = 0, lastX = 0, lastT = 0, moved = 0;
+document.addEventListener("pointerdown", wake, true);
+cv.addEventListener("pointerdown", e => {
+  dragging = true; focus = null; cv.classList.add("drag");
+  downX = lastX = e.clientX; downY = e.clientY; lastT = performance.now(); moved = 0;
+  cv.setPointerCapture(e.pointerId);
+});
+cv.addEventListener("pointermove", e => {
+  if (dragging){
+    const dx = e.clientX - lastX, now = performance.now();
+    angle += dx * 0.012;
+    vel = Math.max(-6, Math.min(6, dx * 0.012 / Math.max(0.016, (now - lastT) / 1000)));
+    lastX = e.clientX; lastT = now;
+    moved = Math.max(moved, Math.hypot(e.clientX - downX, e.clientY - downY));
+  } else {
+    cv.classList.toggle("hover", !!(hitTest(e.clientX, e.clientY) || near(starHit, e) || near(moonHit, e) || near(catHit, e) || near(wishHit, e)));
+  }
+});
+const near = (h, e) => h && Math.hypot(h.x - e.clientX, h.y - e.clientY) < h.r;
+function endDrag(e){
+  if (!dragging) return;
+  dragging = false; cv.classList.remove("drag");
+  if (Math.abs(vel) > 0.3) spinDir = Math.sign(vel);
+  if (moved >= 8) return;
+  const h = hitTest(e.clientX, e.clientY);
+  if (h){ openCard(msgs[h.k]); return; }
+  if (near(starHit, e)){
+    starTaps.push(t); while (starTaps.length && starTaps[0] < t - 3) starTaps.shift();
+    if (starTaps.length >= 5){
+      starTaps.length = 0;
+      burst(starHit.x / cw, starHit.y / ch, 90, FW_COLORS[1], rows * 0.2);
+      ["star", "smile", "snowflake"].forEach((s, i) => setTimeout(() => launchRocket(s), 300 + i * 500));
+      egg("star", "⭐ You poked the star too hard! Pop!");
+    } else burst(starHit.x / cw, starHit.y / ch, 10, FW_COLORS[1], rows * 0.06);
+    return;
+  }
+  if (near(wishHit, e)){
+    burst(wishHit.x / cw, wishHit.y / ch, 50, ["#fff1a8", "#ffffff"], rows * 0.12);
+    for (let i = 0; i < 4; i++) setTimeout(spawnMeteor, i * 350);
+    bubbles.push({ x: wishHit.x, y: wishHit.y - ch, text: "Make a wish ✨", until: t + 2.5 });
+    egg("wish", "🌠 You found the wishing star! Make a wish");
+    return;
+  }
+  if (near(moonHit, e)){ moonFullUntil = t + 6; egg("moon", "🌕 It turned into a full moon!"); return; }
+  if (near(catHit, e)){
+    cat.phase = "out"; cat.fast = true;
+    bubbles.push({ x: catHit.x, y: catHit.y - 2 * ch, text: "Meow?!", until: t + 1.6 });
+    egg("cat", "🐈 You woke the napping cat!");
+  }
+}
+cv.addEventListener("pointerup", endDrag);
+cv.addEventListener("pointercancel", () => { dragging = false; cv.classList.remove("drag"); });
+cv.addEventListener("wheel", e => {
+  e.preventDefault(); wake();
+  const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+  focus = null;
+  angle += d * 0.004;
+  vel = Math.max(-6, Math.min(6, d * 0.06));
+  if (Math.abs(d) > 2) spinDir = Math.sign(d);
+}, { passive: false });
+
+function hitTest(x, y){
+  let best = null, bd = Infinity;
+  for (const h of hits){ const d = Math.hypot(h.x - x, h.y - y); if (d < h.r && d < bd){ bd = d; best = h; } }
+  return best;
+}
+
+/* ---------------- 메시지 카드 ---------------- */
+let currentId = null;
+function faceTo(m, sec){ focus = { id: m.id, target: m.theta - Math.PI / 2, until: t + sec }; }
+function openCard(m){
+  currentId = m.id;
+  faceTo(m, 6);
+  $("#cIcon").textContent = m.kind === "gift" ? "🎁" : "🔴";
+  $("#cIcon").style.filter = `drop-shadow(0 0 10px ${m.col})`;
+  $("#cHead").textContent = m.kind === "gift" ? "// gift.open()" : "// ornament.read()";
+  $("#cMsg").textContent = m.text;
+  $("#cFrom").textContent = `From. ${m.name || "Anonymous"}  →  To. ${m.to || "Everyone 🎄"}`;
+  $("#trOut").classList.add("hidden"); $("#trOut").textContent = "";
+  if (ME && m.to === ME) markRead(m.id);
+  $("#cDate").textContent = m.t ? new Date(m.t).toLocaleString("en-US", { month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
+  $("#card").classList.remove("hidden");
+}
+function openRandom(){
+  if (!msgs.length){ toast("No messages yet. Be the first to hang one! 🎄"); return; }
+  const pool = msgs.length > 1 ? msgs.filter(m => m.id !== currentId) : msgs;
+  openCard(pick(pool));
+}
+$("#btnRandom").onclick = openRandom;
+$("#cNext").onclick = openRandom;
+$("#btnFill").onclick = () => { FILL = { symbol: "text", text: "binary", binary: "symbol" }[FILL]; $("#btnFill").textContent = "FILL: " + FILL; };
+
+/* ---------------- 편지함 (나에게 온 편지) ---------------- */
+let ME = localStorage.getItem("mytree.me") || "";
+if (!CONFIG.MEMBERS.includes(ME)) ME = "";
+let hlMine = localStorage.getItem("mytree.hlMine") === "1";
+function readSet(){ try { return new Set(JSON.parse(localStorage.getItem("mytree.read." + ME) || "[]")); } catch(_){ return new Set(); } }
+function markRead(id){
+  const r = readSet(); if (r.has(id)) return;
+  r.add(id); try { localStorage.setItem("mytree.read." + ME, JSON.stringify([...r])); } catch(_){}
+  updateMail();
+}
+let unreadIds = new Set();
+const myLetters = () => ME ? msgs.filter(m => m.to === ME).sort((a, b) => b.t - a.t) : [];
+function updateMail(){
+  const btn = $("#btnMail"); if (!btn) return;
+  const r = readSet();
+  unreadIds = new Set(myLetters().filter(m => !r.has(m.id)).map(m => m.id));
+  const unread = unreadIds.size;
+  btn.classList.toggle("has", unread > 0);
+  btn.innerHTML = unread ? `📬 Mailbox <span class="badge">${unread}</span>` : "📭 Mailbox";
+  if (!$("#mailbox").classList.contains("hidden")) renderMailbox();
+}
+function fillMemberSelect(sel, first, value){
+  sel.innerHTML = "";
+  const o = document.createElement("option"); o.value = first[0]; o.textContent = first[1]; sel.appendChild(o);
+  for (const name of CONFIG.MEMBERS){ const op = document.createElement("option"); op.value = name; op.textContent = name; sel.appendChild(op); }
+  sel.value = value || first[0];
+}
+function renderMailbox(){
+  $("#whoNow").textContent = ME ? `Signed in as ${ME}` : "You're visiting as a guest";
+  $("#btnSwitch").textContent = ME ? "Switch" : "Pick your name";
+  $("#hlMine").checked = hlMine; $("#hlMine").disabled = !ME;
+  $("#mbTitle").textContent = ME ? `📬 Letters for ${ME}` : "📬 Mailbox";
+  const ul = $("#mbList"); ul.innerHTML = "";
+  if (!ME){ ul.innerHTML = '<li class="empty">Pick your name to see letters sent to you ✉️</li>'; return; }
+  const list = myLetters(), r = readSet();
+  if (!list.length){ ul.innerHTML = '<li class="empty">No letters yet… they might be on their way 🎄</li>'; return; }
+  for (const m of list){
+    const li = document.createElement("li"); li.className = r.has(m.id) ? "" : "unread";
+    li.innerHTML = '<button type="button"><span class="ic"></span><span class="body"><span class="top"></span><span class="pv"></span><span class="dt"></span></span></button>';
+    li.querySelector(".ic").textContent = m.kind === "gift" ? "🎁" : "🔴";
+    li.querySelector(".ic").style.filter = `drop-shadow(0 0 6px ${m.col})`;
+    const top = li.querySelector(".top");
+    if (!r.has(m.id)){ const n = document.createElement("span"); n.className = "new"; n.textContent = "NEW · "; top.appendChild(n); }
+    top.appendChild(document.createTextNode("From. " + (m.name || "Anonymous")));
+    li.querySelector(".pv").textContent = m.text;
+    li.querySelector(".dt").textContent = m.t ? new Date(m.t).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
+    li.querySelector("button").onclick = () => { $("#mailbox").classList.add("hidden"); document.body.classList.remove("mbopen"); openCard(m); };
+    ul.appendChild(li);
+  }
+}
+const mailTaps = [];
+function mailStorm(){
+  for (let i = 0; i < 40; i++) parts.push({ env: true, gold: Math.random() < 0.3, x: rand(-12, cols * 0.9), y: rand(-rows * 0.6, -2),
+    vx: rand(3, 9), vy: rand(4, 9), life: 0, max: rand(4, 6) });
+}
+$("#btnMail").onclick = () => {
+  mailTaps.push(t); while (mailTaps.length && mailTaps[0] < t - 3) mailTaps.shift();
+  const b = $("#btnMail"); b.classList.remove("shake"); void b.offsetWidth; b.classList.add("shake");
+  if (mailTaps.length >= 5){
+    mailTaps.length = 0; mailStorm();
+    $("#mailbox").classList.add("hidden"); document.body.classList.remove("mbopen");
+    egg("mail", "📮 Mail storm! The mailbox couldn't take it anymore");
+    return;
+  }
+  renderMailbox(); $("#mailbox").classList.remove("hidden"); document.body.classList.add("mbopen");
+};
+function setMe(name){
+  ME = CONFIG.MEMBERS.includes(name) ? name : "";
+  try { localStorage.setItem("mytree.me", ME); } catch(_){}
+  if ($("#fFrom")) $("#fFrom").value = ME || "Anonymous";
+  $("#whoami").classList.add("hidden");
+  updateMail();
+  if (!$("#mailbox").classList.contains("hidden")) renderMailbox();
+  const unread = myLetters().filter(m => !readSet().has(m.id)).length;
+  toast(ME ? (unread ? `Hi ${ME}! You have ${unread} new letter${unread > 1 ? "s" : ""} 📬` : `Hi ${ME}! Merry Christmas 🎄`) : "Welcome! Enjoy the tree 🎄");
+}
+function openWhoami(){
+  const g = $("#whoGrid"); g.innerHTML = "";
+  for (const name of CONFIG.MEMBERS){
+    const b = document.createElement("button"); b.type = "button"; b.textContent = name;
+    if (name === ME) b.className = "cur";
+    b.onclick = () => setMe(name);
+    g.appendChild(b);
+  }
+  $("#whoami").classList.remove("hidden");
+}
+$("#whoGuest").onclick = () => setMe("");
+$("#btnSwitch").onclick = () => { $("#mailbox").classList.add("hidden"); document.body.classList.remove("mbopen"); openWhoami(); };
+$("#hlMine").onchange = e => {
+  hlMine = e.target.checked; try { localStorage.setItem("mytree.hlMine", hlMine ? "1" : "0"); } catch(_){}
+  toast(hlMine ? `✨ Only letters for ${ME} are glowing now` : "All decorations are back to normal");
+};
+
+/* ---------------- 번역 ---------------- */
+const LANGS = [["en","English"],["ko","한국어"],["ja","日本語"],["zh-CN","中文(简体)"],["ru","Русский"],["th","ไทย"],["vi","Tiếng Việt"],["id","Bahasa Indonesia"],["hi","हिन्दी"],["es","Español"],["fr","Français"],["de","Deutsch"]];
+function guessLang(text){
+  if (/[\uac00-\ud7a3]/.test(text)) return "ko";
+  if (/[\u3040-\u30ff]/.test(text)) return "ja";
+  if (/[\u4e00-\u9fff]/.test(text)) return "zh-CN";
+  if (/[\u0400-\u04ff]/.test(text)) return "ru";
+  if (/[\u0e00-\u0e7f]/.test(text)) return "th";
+  if (/[\u0900-\u097f]/.test(text)) return "hi";
+  return "en";
+}
+(function initLang(){
+  const sel = $("#trLang");
+  for (const [code, name] of LANGS){ const o = document.createElement("option"); o.value = code; o.textContent = name; sel.appendChild(o); }
+  const saved = localStorage.getItem("mytree.lang");
+  const nav = (navigator.language || "en").toLowerCase();
+  const auto = (LANGS.find(([c]) => c.toLowerCase() === nav) || LANGS.find(([c]) => nav.startsWith(c.split("-")[0])) || ["en"])[0];
+  sel.value = saved || auto;
+  sel.onchange = () => { try { localStorage.setItem("mytree.lang", sel.value); } catch(_){} };
+})();
+async function translateText(text, tl){
+  // 1) Google 번역 (무료 공개 엔드포인트) → 2) MyMemory → 실패 시 링크 안내
+  try {
+    const r = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${encodeURIComponent(tl)}&dt=t&q=${encodeURIComponent(text)}`);
+    if (!r.ok) throw new Error("google " + r.status);
+    const j = await r.json();
+    const out = (j[0] || []).map(x => x[0]).join("");
+    if (out) return { text: out, src: j[2] || "", via: "Google Translate" };
+  } catch(_){}
+  const sl = guessLang(text);
+  if (sl === tl.split("-")[0] || sl === tl) return { text, src: sl, via: "", same: true };
+  const r = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${sl}|${tl}`);
+  const j = await r.json();
+  if (String(j.responseStatus) !== "200" || /MYMEMORY WARNING/i.test(j.responseData?.translatedText || "")) throw new Error("mymemory");
+  return { text: j.responseData.translatedText, src: sl, via: "MyMemory" };
+}
+$("#trBtn").onclick = async () => {
+  const m = msgs.find(x => x.id === currentId); if (!m) return;
+  const out = $("#trOut"), tl = $("#trLang").value, btn = $("#trBtn");
+  out.classList.remove("hidden"); out.textContent = "Translating…"; btn.disabled = true;
+  try {
+    const res = await translateText(m.text, tl);
+    out.textContent = res.text;
+    const note = document.createElement("small");
+    note.textContent = res.same ? "Looks like it's already in this language 🙂" : `Translated${res.src ? " from " + res.src : ""} · ${res.via}`;
+    out.appendChild(note);
+  } catch(_){
+    out.textContent = "Couldn't translate right now. ";
+    const a = document.createElement("a");
+    a.href = `https://translate.google.com/?sl=auto&tl=${encodeURIComponent(tl)}&text=${encodeURIComponent(m.text)}&op=translate`;
+    a.target = "_blank"; a.rel = "noopener"; a.textContent = "Open in Google Translate ↗";
+    out.appendChild(a);
+  } finally { btn.disabled = false; }
+};
+
+/* ---------------- 작성 폼 ---------------- */
+let selColor = "red";
+(function buildSwatches(){
+  const box = $("#swatches");
+  for (const [k, v] of Object.entries(COLORS)){
+    const b = document.createElement("button");
+    b.type = "button"; b.style.background = v; b.style.setProperty("--c", v); b.title = k; b.setAttribute("aria-label", k);
+    if (k === selColor) b.classList.add("on");
+    b.onclick = () => { selColor = k; box.querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b)); };
+    box.appendChild(b);
+  }
+})();
+$("#fNote").textContent = PREVIEW ? "Preview mode — nothing will be saved."
+  : DB ? "Everyone visiting this tree can see your message. Every 10 decorations unlock a new surprise!"
+  : "No shared storage is set up yet, so messages are saved in this browser only.";
+$("#fText").addEventListener("input", e => { $("#fCount").textContent = e.target.value.length; });
+fillMemberSelect($("#fFrom"), ["Anonymous", "Anonymous 🤫"], ME || "Anonymous");
+fillMemberSelect($("#fTo"), ["", "🎄 Everyone"], "");
+$("#btnAdd").onclick = () => { if (ME && $("#fFrom").value === "Anonymous") $("#fFrom").value = ME; $("#modal").classList.remove("hidden"); setTimeout(() => $("#fText").focus(), 50); };
+document.querySelectorAll(".overlay").forEach(ov => {
+  ov.addEventListener("click", e => { if (e.target === ov || e.target.closest("[data-close]")){ ov.classList.add("hidden"); if (ov.id === "mailbox") document.body.classList.remove("mbopen"); } });
+});
+document.addEventListener("keydown", e => { if (e.key === "Escape"){ document.querySelectorAll(".overlay").forEach(o => o.classList.add("hidden")); document.body.classList.remove("mbopen"); } });
+
+$("#form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const text = $("#fText").value.trim().slice(0, CONFIG.MAX_TEXT);
+  if (!text){ toast("Write a message first ✍️"); return; }
+  if (!PREVIEW){
+    const wait = CONFIG.COOLDOWN_SEC - (Date.now() - +(localStorage.getItem("mytree.lastPost") || 0)) / 1000;
+    if (wait > 0){ toast(`You can hang another one in ${Math.ceil(wait)}s`); return; }
+  }
+  const raw = {
+    name: ($("#fFrom").value || "Anonymous").slice(0, CONFIG.MAX_NAME),
+    to: CONFIG.MEMBERS.includes($("#fTo").value) ? $("#fTo").value : "",
+    text,
+    kind: document.querySelector('input[name="kind"]:checked').value === "gift" ? "gift" : "ornament",
+    color: selColor,
+    t: Date.now(),
+  };
+  const btn = $("#fSubmit"); btn.disabled = true;
+  try {
+    let id;
+    if (DB && !PREVIEW){
+      const res = await fetch(`${DB}/messages.json`, { method: "POST", body: JSON.stringify(raw) });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      id = (await res.json()).name;
+      if (id > lastKey) lastKey = id;
+    } else id = "l" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    const m = prepare(sanitize(id, raw));
+    msgs.push(m);
+    if (!DB && !PREVIEW) saveLocal();
+    if (!PREVIEW) localStorage.setItem("mytree.lastPost", String(Date.now()));
+    onMsgsChanged();
+    $("#modal").classList.add("hidden");
+    $("#fText").value = ""; $("#fCount").textContent = "0";
+    faceTo(m, 4);
+    toast(m.kind === "gift" ? "Your gift is under the tree 🎁" : "Your ornament is on the tree ✨");
+    checkWords(text + " " + raw.name);
+  } catch (err){
+    console.error(err);
+    toast("Couldn't save. Please try again in a moment");
+  } finally { btn.disabled = false; }
+});
+
+/* ---------------- 저장소 ---------------- */
+const LS_KEY = "mytree.messages.v2";   // 키를 바꾸면 이전에 저장된 장식이 초기화돼요
+try { localStorage.removeItem("mytree.messages.v1"); } catch(_){}
+function sanitize(id, m){
+  if (!m || typeof m !== "object") return null;
+  const text = String(m.text || "").slice(0, CONFIG.MAX_TEXT).trim();
+  if (!text) return null;
+  return { id: String(id), name: String(m.name || "Anonymous").slice(0, CONFIG.MAX_NAME), text,
+    kind: m.kind === "gift" ? "gift" : "ornament",
+    color: Object.prototype.hasOwnProperty.call(COLORS, m.color) ? m.color : "red", t: Number(m.t) || 0,
+    to: CONFIG.MEMBERS.includes(m.to) ? m.to : "" };
+}
+function saveLocal(){ try { localStorage.setItem(LS_KEY, JSON.stringify(msgs.map(({id, name, text, kind, color, t, to}) => ({id, name, text, kind, color, t, to})))); } catch(_){} }
+function loadLocal(){
+  try { msgs = JSON.parse(localStorage.getItem(LS_KEY) || "[]").map(m => sanitize(m.id, m)).filter(Boolean).map(prepare); }
+  catch(_){ msgs = []; }
+}
+let remoteLoaded = false, lastKey = "";
+async function loadRemote(){
+  if (remoteLoaded && document.hidden) return;   // 탭이 안 보일 땐 쉬기 (무료 한도 아끼기)
+  try {
+    // 처음엔 최근 400개, 그 뒤엔 마지막으로 본 것 이후의 새 메시지만 받아와요
+    const q = remoteLoaded && lastKey
+      ? `orderBy=%22%24key%22&startAt=${encodeURIComponent(JSON.stringify(lastKey))}`
+      : `orderBy=%22%24key%22&limitToLast=400`;
+    const res = await fetch(`${DB}/messages.json?${q}`, { cache: "no-store" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = (await res.json()) || {};
+    const known = new Set(msgs.map(m => m.id));
+    let added = 0;
+    for (const [id, v] of Object.entries(data)){
+      if (id > lastKey) lastKey = id;
+      if (known.has(id)) continue;
+      const m = sanitize(id, v); if (m){ msgs.push(prepare(m)); added++; }
+    }
+    const first = !remoteLoaded; remoteLoaded = true;
+    if (first || added){ msgs.sort((a, b) => a.t - b.t); onMsgsChanged(first); }
+  } catch (err){ console.warn("Failed to load messages", err); }
+}
+function makePreview(n){
+  const words = ["Merry Christmas!", "Happy holidays 🎄", "Thanks for this year", "Warm wishes", "Happy New Year!", "Dear Santa, gifts please"];
+  const keys = Object.keys(COLORS);
+  msgs = Array.from({ length: n }, (_, i) => prepare({ id: "p" + i, name: "friend" + (i + 1), text: words[i % words.length],
+    kind: i % 3 === 2 ? "gift" : "ornament", color: keys[i % keys.length], t: Date.now() - (n - i) * 60000,
+    to: i % 4 === 0 ? "" : CONFIG.MEMBERS[i % CONFIG.MEMBERS.length] }));
+}
+function onMsgsChanged(initial){ rebuildTextSrc(); updateLevel(initial); updateHud(); renderGuide(); updateMail(); }
+
+/* ---------------- 시작 ---------------- */
+let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(resize, 120); });
+resize();
+if (PREVIEW){ makePreview(PREVIEW); onMsgsChanged(true); }
+else if (DB){ onMsgsChanged(true); loadRemote(); setInterval(loadRemote, CONFIG.POLL_SEC * 1000); document.addEventListener("visibilitychange", () => { if (!document.hidden) loadRemote(); }); }
+else { loadLocal(); onMsgsChanged(true); }
+setInterval(updateHud, 250);
+requestAnimationFrame(frame);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(resize);
+Music.label();
+checkDate();
+renderGuide();
+setGuide(innerWidth >= 1000);
+// 처음 방문(또는 목록에 없는 이름)이면 누군지 물어보기
+if (localStorage.getItem("mytree.me") === null || (localStorage.getItem("mytree.me") && !ME)) openWhoami();
+</script>
+</body>
+</html>
