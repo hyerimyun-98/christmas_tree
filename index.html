@@ -61,6 +61,8 @@
   .overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:20;padding:16px;
     backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
   .hidden{display:none!important}
+  /* 곰이 쿵쿵 걸을 때 화면이 같이 흔들려요 (기존 transform과 따로 움직이는 translate 속성 사용) */
+  #c, #street, #tunnel, #trash, #greet, #hud, #btnAdd, .bestFloat{translate:var(--qx,0px) var(--qy,0px)}
   canvas.grabItem{cursor:grabbing!important}
   #eggName{z-index:40}
   #eggName .sheet{max-width:340px;text-align:center}
@@ -1235,7 +1237,11 @@ async function letterRoute(m, sx, sy){
    빛 방향에 따라 밝기를 정해서 글자(RAMP)와 갈색 톤으로 그려요. 트리와 같은 원근·깊이(z-buffer)를 써서
    트리 뒤에 가려지기도 해요. 키는 트리와 비슷해요. */
 const FORCE_BEAR = new URLSearchParams(location.search).has("bear");
-const bear = { phase: "off", bx: -2.4, bz: -0.32, yaw: 1.3, t0: 0, next: FORCE_BEAR ? 3 : 240, sway: 0, walk: 0 };   // 4분 넘게 켜두면 30초마다 15% 확률
+const bear = { phase: "off", bx: -2.4, bz: -0.32, yaw: 1.3, t0: 0, next: FORCE_BEAR ? 3 : 240, sway: 0, walk: 0 };   // 실제로 4분 넘게 보고 있으면 30초마다 15% 확률
+// "보고 있는 시간"만 세요: 탭이 보이고, 창이 앞에 있고, 최근 1분 안에 마우스·터치·스크롤·키 입력이 있었을 때
+let watchT = 0, lastSeen = 0;
+["pointermove", "pointerdown", "keydown", "wheel", "touchstart", "scroll"].forEach(ev => addEventListener(ev, () => { lastSeen = t; }, { passive: true, capture: true }));
+const isWatching = () => !document.hidden && document.hasFocus() && t - lastSeen < 60;
 const shakeFx = { on: false, fallAt: 0, retAt: 0 };
 const BEAR_STOP = -0.76;
 // 좁은 화면에선 곰이 화면 밖으로 나가지 않게 트리 뒤쪽으로 더 가까이 서요
@@ -1281,13 +1287,17 @@ const bearPts = [];
   }
 })();
 function stepBear(dt){
+  stepQuake(dt);
   if (bear.phase === "off"){
-    if (t > bear.next && !document.hidden && !shakeFx.on){
-      if (FORCE_BEAR || Math.random() < 0.15){ Object.assign(bear, { phase: "in", bx: -2.6, bz: bearStop().z, yaw: 1.25, walk: 0 }); }
-      else bear.next = t + 30;
+    if (FORCE_BEAR || isWatching()) watchT += dt;
+    // 충분히 오래 봤고, 지금 이 순간에도 화면 앞에 있을 때(최근 20초 안에 움직임)만 나와요
+    if (watchT > bear.next && !shakeFx.on && (FORCE_BEAR || (isWatching() && t - lastSeen < 20))){
+      if (FORCE_BEAR || Math.random() < 0.15){ Object.assign(bear, { phase: "in", bx: -2.6, bz: bearStop().z, yaw: 1.25, walk: 0, lastStep: 0 }); }
+      else bear.next = watchT + 30;
     }
   } else if (bear.phase === "in"){
-    bear.bx += dt * 0.42; bear.walk += dt * 5.5;
+    bear.bx += dt * 0.22; bear.walk += dt * 3.2;   // 느릿느릿 쿵… 쿵…
+    { const sN = Math.floor(bear.walk / Math.PI + 0.5); if (sN !== bear.lastStep){ bear.lastStep = sN; if (bear.bx > -2.3) stomp(bear.bx > -1.2 ? 1 : 0.6); } }
     const st = bearStop(); bear.bz = st.z;
     if (bear.bx > st.x - 0.35) bear.yaw += (0.55 - bear.yaw) * Math.min(1, dt * 3);   // 트리 쪽으로 몸을 돌려요
     if (bear.bx >= st.x){
@@ -1302,18 +1312,42 @@ function stepBear(dt){
     bear.sway = Math.sin(t * 26) * scale * 0.04 * k;
     if (Math.random() < dt * 30) parts.push({ x: rand(cx / cw - 14, cx / cw + 14), y: rand(rows * 0.12, groundRow - 4), vx: rand(-2, 2), vy: rand(1, 4), life: 0, max: rand(0.5, 1), pal: ["#4fd18b", "#2e8f5a"], g: 6, chr: pick([",", "'", "*"]) });
     if (t - bear.t0 > 4.4){
-      bear.phase = "out"; bear.sway = 0; bear.walk = 0;
+      bear.phase = "out"; bear.sway = 0; bear.walk = 0; bear.lastStep = 0;
       const h = bearHead(); bubbles.push({ x: h.x, y: h.y, text: "…bye 🐾", until: t + 1.6 });
     }
   } else {
     bear.yaw += (-1.25 - bear.yaw) * Math.min(1, dt * 2.5);   // 돌아서서
-    if (bear.yaw < -0.6){ bear.bx -= dt * 0.5; bear.walk += dt * 6; }
-    if (bear.bx < -2.7){ bear.phase = "off"; shakeFx.retAt = t; bear.next = t + 600; }
+    if (bear.yaw < -0.6){
+      bear.bx -= dt * 0.26; bear.walk += dt * 3.6;
+      const sN = Math.floor(bear.walk / Math.PI + 0.5); if (sN !== bear.lastStep){ bear.lastStep = sN; if (bear.bx > -2.3) stomp(bear.bx > -1.2 ? 0.8 : 0.5); }
+    }
+    if (bear.bx < -2.7){ bear.phase = "off"; shakeFx.retAt = t; bear.next = watchT + 600; }
   }
   if (shakeFx.on && shakeFx.retAt && t > shakeFx.retAt + 2.4){
     shakeFx.on = false;
     for (const m of msgs){ delete m._fc; delete m._fr; delete m._fdone; }
   }
+}
+// 쿵! 발이 땅에 닿을 때마다: 화면 흔들림 + 선물·스노우볼이 통 튀고 + 집이 들썩 + 먼지
+const quake = { amp: 0, set: false, thud: -9 };
+function stomp(strength){
+  quake.amp = Math.min(1.6, quake.amp + strength); quake.thud = t;
+  for (const m of msgs) if (!onTree(m) && !m._del && Math.random() < 0.6 * strength && !(itemDrag && itemDrag.m === m)) m._hop = t;
+  document.querySelectorAll("#streetInner .hut").forEach(h => { if (Math.random() < 0.45 * strength){ h.classList.remove("shake"); void h.offsetWidth; h.classList.add("shake"); } });
+  projB(bear.bx, GIFT_Y, bear.bz);
+  const fc = PX / cw;
+  for (let i = 0; i < 14; i++) parts.push({ x: fc + rand(-9, 9), y: groundRow - 0.5, vx: rand(-4, 4), vy: -rand(0.5, 2.5), life: 0, max: rand(0.4, 0.9), pal: ["rgba(220,210,190,.7)", "rgba(170,160,140,.5)"], chr: pick([".", "'", ","]), front: true });
+}
+function stepQuake(dt){
+  quake.amp *= Math.exp(-dt * 4);
+  if (bear.phase === "shake") quake.amp = Math.max(quake.amp, 0.35);
+  const root = document.documentElement.style;
+  if (quake.amp > 0.02){
+    const a = quake.amp;
+    root.setProperty("--qx", (Math.sin(t * 47) * a * 3).toFixed(2) + "px");
+    root.setProperty("--qy", (Math.sin(t * 61 + 1) * a * 6).toFixed(2) + "px");
+    quake.set = true;
+  } else if (quake.set){ root.setProperty("--qx", "0px"); root.setProperty("--qy", "0px"); quake.set = false; }
 }
 // 곰 전용 원근 투영 (트리처럼 빙글 돌지 않아요)
 function projB(x, y, z){
@@ -1491,7 +1525,8 @@ function frame(now){
     spinLog.length = 0; rainbowUntil = swayUntil = t + 6;
     egg("spin", "🌀 Too much spinning! The tree is dizzy");
   }
-  sway = (t < swayUntil ? Math.sin(t * 9) * scale * 0.04 * (swayUntil - t) / 6 : 0) + (bear.phase === "shake" ? bear.sway : 0);
+  sway = (t < swayUntil ? Math.sin(t * 9) * scale * 0.04 * (swayUntil - t) / 6 : 0) + (bear.phase === "shake" ? bear.sway : 0)
+    + (t - quake.thud < 0.8 ? Math.sin((t - quake.thud) * 28) * scale * 0.012 * Math.exp(-(t - quake.thud) * 5) : 0);   // 쿵! 할 때 트리도 살짝 휘청
 
   ca = Math.cos(angle); sa = Math.sin(angle);
   stepActors(dt);
