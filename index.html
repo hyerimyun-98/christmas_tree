@@ -181,6 +181,10 @@
   .hut.has::after{content:"✨";position:absolute;top:-6px;right:0;font-size:12px;animation:twinkle 1.2s ease-in-out infinite}
   .hut.on .nm{text-decoration:underline;text-underline-offset:3px}
   .hut.shake{animation:shake .3s}
+  .hut.hall{margin-right:8px}
+  .hut .st{color:#ffd34d;text-shadow:0 0 6px #ffcc33}
+  .hut.hall .rf{color:#c9a06a}
+  .hut.hall .nm{color:#9dffb0}
   @keyframes hutGlow{0%,100%{filter:drop-shadow(0 0 0 rgba(255,220,100,0))}50%{filter:drop-shadow(0 0 7px rgba(255,220,100,.55))}}
   @media (max-width: 600px){
     :root{--street: 88px}
@@ -293,6 +297,8 @@ const CONFIG = {
   SPIN: 0.35,
   // 연구실 멤버 (편지 보내는이/받는이 목록)
   MEMBERS: ["강은", "상은", "Vika", "Akira", "부승", "종호", "정빈", "경택", "Rai", "성준", "기락", "교수님", "이든", "혜림"],
+  // 예전 이름 → 새 이름 (이름을 바꿔도 이미 받은 편지가 새 메일함으로 들어가요)
+  RENAMED: { "교수": "교수님" },
   MAX_TEXT: 80,
   MAX_NAME: 12,
   COOLDOWN_SEC: 15,
@@ -871,7 +877,7 @@ function frame(now){
     const m = msgs[k];
     proj(m.x, m.y, m.z);
     const c = (PX / cw) | 0, r = (PY / ch) | 0;
-    const mine = !!(hlName && m.to === hlName), dim = !!hlName && !mine;
+    const mine = !!hlName && (hlName === EVERYONE ? isForAll(m) : m.to === hlName), dim = !!hlName && !mine;
     const hl = !!(focus && focus.id === m.id) || (mine && Math.sin(t * 4 + k) > 0.55);
     const unreadMine = mine && unreadIds.has(m.id);
     m._mine = mine; m._dim = dim; m._unread = unreadMine;
@@ -1482,10 +1488,13 @@ function markRead(id){
   updateMail();
 }
 let unreadIds = new Set();
-const lettersFor = name => msgs.filter(m => m.to === name).sort((a, b) => b.t - a.t);
+const EVERYONE = "*";   // 모두에게 온 편지 게시판
+const isForAll = m => !CONFIG.MEMBERS.includes(m.to);   // 받는이가 없거나 목록에 없는 이름이면 게시판으로
+const lettersFor = name => msgs.filter(m => name === EVERYONE ? isForAll(m) : m.to === name).sort((a, b) => b.t - a.t);
+const boxLabel = name => name === EVERYONE ? "Everyone" : name;
 function updateMail(){
   const r = readSet();
-  unreadIds = new Set(msgs.filter(m => m.to && !r.has(m.id)).map(m => m.id));
+  unreadIds = new Set(msgs.filter(m => !r.has(m.id)).map(m => m.id));
   renderStreet();
   if (!$("#mailbox").classList.contains("hidden")) renderMailbox();
 }
@@ -1501,23 +1510,34 @@ function hutArt(n, unread){
     ["bd", "  |__|__|  "],
   ];
 }
+function hallArt(n, unread){
+  const win = (unread ? "*" : n ? "=" : ".") + (n ? String(Math.min(n, 99)) : "").padEnd(2, " ");
+  return [
+    ["st", "      *      \n"],
+    ["rf", "     /_\\     \n"],
+    ["rf", "   _/   \\_   \n"],
+    ["rf", "  /_______\\  \n"],
+    ["bd", "  | ["], ["wn", win], ["bd", "] |  \n"],
+    ["bd", "  |___|___|  "],
+  ];
+}
 function renderStreet(){
   const box = $("#streetInner"); if (!box) return;
   const r = readSet();
   box.innerHTML = "";
-  for (const name of CONFIG.MEMBERS){
+  for (const name of [EVERYONE, ...CONFIG.MEMBERS]){
     const list = lettersFor(name), unread = list.filter(m => !r.has(m.id)).length;
     const b = document.createElement("button");
     b.type = "button";
-    b.className = "hut" + (unread ? " has" : "") + (list.length ? " full" : "") + (hlName === name ? " on" : "");
-    b.title = `${name}'s mailbox — ${list.length} letter${list.length === 1 ? "" : "s"}${unread ? `, ${unread} new` : ""}`;
+    b.className = "hut" + (name === EVERYONE ? " hall" : "") + (unread ? " has" : "") + (list.length ? " full" : "") + (hlName === name ? " on" : "");
+    b.title = `${name === EVERYONE ? "Letters for everyone" : name + "'s mailbox"} — ${list.length} letter${list.length === 1 ? "" : "s"}${unread ? `, ${unread} new` : ""}`;
     const pre = document.createElement("pre");
-    for (const [cls, txt] of hutArt(list.length, unread)){
+    for (const [cls, txt] of (name === EVERYONE ? hallArt : hutArt)(list.length, unread)){
       const sp = document.createElement("span"); sp.className = cls;
       sp.textContent = txt;
       pre.appendChild(sp);
     }
-    const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = name;
+    const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = name === EVERYONE ? "🎄 Everyone" : name;
     b.appendChild(pre); b.appendChild(nm);
     b.onclick = () => knockHut(b, name);
     box.appendChild(b);
@@ -1533,7 +1553,7 @@ function knockHut(el, name){
   if (knock.times.length >= 5){
     knock.times = [];
     mailStorm();
-    egg("mail", `📮 Mail storm! ${name}'s mailbox couldn't take it anymore`);
+    egg("mail", `📮 Mail storm! ${name === EVERYONE ? "The town hall" : name + "'s mailbox"} couldn't take it anymore`);
     return;
   }
   knock.timer = setTimeout(() => openMailbox(name), 400);   // 한 번만 두드리면 열려요
@@ -1551,8 +1571,9 @@ function fillMemberSelect(sel, first, value){
 function renderMailbox(){
   const r = readSet();
   if (!mbView) return;
-  $("#mbTitle").textContent = `📬 ${mbView}'s mailbox`;
-  $("#hlLabel").textContent = `✨ Make only ${mbView}'s ornaments & gifts glow on the tree`;
+  const all = mbView === EVERYONE;
+  $("#mbTitle").textContent = all ? "🎄 Letters for everyone" : `📬 ${mbView}'s mailbox`;
+  $("#hlLabel").textContent = all ? "✨ Make only the letters for everyone glow on the tree" : `✨ Make only ${mbView}'s ornaments & gifts glow on the tree`;
   $("#hlMine").checked = hlName === mbView;
   const ul = $("#mbList"); ul.innerHTML = "";
   const list = lettersFor(mbView);
@@ -1564,7 +1585,7 @@ function renderMailbox(){
     li.querySelector(".ic").style.filter = `drop-shadow(0 0 6px ${m.col})`;
     const top = li.querySelector(".top");
     if (!r.has(m.id)){ const n = document.createElement("span"); n.className = "new"; n.textContent = "NEW · "; top.appendChild(n); }
-    top.appendChild(document.createTextNode("From. " + (m.name || "Anonymous")));
+    top.appendChild(document.createTextNode("From. " + (m.name || "Anonymous") + (all && m.to ? `  →  To. ${m.to}` : "")));
     li.querySelector(".pv").textContent = m.text;
     li.querySelector(".dt").textContent = m.t ? new Date(m.t).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
     li.querySelector("button").onclick = () => { $("#mailbox").classList.add("hidden"); document.body.classList.remove("mbopen"); openCard(m); };
@@ -1579,7 +1600,7 @@ function mailStorm(){
 $("#hlMine").onchange = e => {
   hlName = e.target.checked ? mbView : "";
   renderStreet();
-  toast(hlName ? `✨ Only ${hlName}'s letters are glowing now` : "All decorations are back to normal");
+  toast(hlName ? (hlName === EVERYONE ? "✨ Only the letters for everyone are glowing now" : `✨ Only ${hlName}'s letters are glowing now`) : "All decorations are back to normal");
 };
 
 /* ---------------- 번역 ---------------- */
@@ -1710,10 +1731,10 @@ function sanitize(id, m){
   if (!m || typeof m !== "object") return null;
   const text = String(m.text || "").slice(0, CONFIG.MAX_TEXT).trim();
   if (!text) return null;
-  return { id: String(id), name: String(m.name || "Anonymous").slice(0, CONFIG.MAX_NAME), text,
+  return { id: String(id), name: String(CONFIG.RENAMED[m.name] || m.name || "Anonymous").slice(0, CONFIG.MAX_NAME), text,
     kind: m.kind === "gift" ? "gift" : "ornament",
     color: Object.prototype.hasOwnProperty.call(COLORS, m.color) ? m.color : "red", t: Number(m.t) || 0,
-    to: CONFIG.MEMBERS.includes(m.to) ? m.to : "" };
+    to: String(CONFIG.RENAMED[m.to] || m.to || "").slice(0, CONFIG.MAX_NAME) };   // 받는이는 지우지 않고 그대로 보존
 }
 function saveLocal(){ try { localStorage.setItem(LS_KEY, JSON.stringify(msgs.map(({id, name, text, kind, color, t, to}) => ({id, name, text, kind, color, t, to})))); } catch(_){} }
 function loadLocal(){
