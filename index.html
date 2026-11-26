@@ -61,6 +61,15 @@
   .overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:20;padding:16px;
     backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
   .hidden{display:none!important}
+  canvas.grabItem{cursor:grabbing!important}
+  #eggName{z-index:40}
+  #eggName .sheet{max-width:340px;text-align:center}
+  #eggName .big{font-size:46px;line-height:1;margin:4px 0 10px;filter:drop-shadow(0 0 14px rgba(255,230,120,.55))}
+  #eggName p{margin:0 0 12px;color:#bfe;font-size:14px;line-height:1.5}
+  #eggName .row{display:flex;gap:8px;margin-top:6px}
+  #eggName .row button{flex:none;padding:0 16px;border-radius:10px;border:0;background:#9dffb0;color:#06210f;font-weight:800;cursor:pointer}
+  #eggName .skip{background:none;border:0;color:#6f8f7a;font:12px var(--mono);margin-top:12px;cursor:pointer}
+  #gEggList .by{display:block;font:11px var(--mono);color:#e9c45a;margin-top:2px}
   .sheet{width:100%;max-width:420px;background:#0c1511;border:1px solid rgba(140,255,170,.25);border-radius:18px;
     box-shadow:0 20px 60px rgba(0,0,0,.6),0 0 40px rgba(60,255,120,.08);overflow:hidden}
   .sheetHead{font:12px var(--mono);color:#7fa58c;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between}
@@ -470,6 +479,19 @@
   '-/ \-'</pre>
   <span class="cnt" id="trashCnt">trash · 0</span>
 </button>
+<div class="overlay hidden" id="eggName">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="enTitle">
+    <div class="sheetHead"><span>// first_finder.sign()</span><button data-close aria-label="Close">✕</button></div>
+    <form class="sheetBody" id="enForm" autocomplete="off">
+      <div class="big" id="enIcon">🥚</div>
+      <h2 id="enTitle">You found it first!</h2>
+      <p id="enLead">Nobody had found this easter egg before you. Sign your name so everyone knows who found it.</p>
+      <div class="row"><input type="text" id="enInput" maxlength="12" placeholder="Your name"><button type="submit">Sign</button></div>
+      <button type="button" class="skip" data-close>stay anonymous</button>
+    </form>
+  </div>
+</div>
+
 <div class="overlay hidden" id="trashView">
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="tvTitle">
     <div class="sheetHead"><span>// trash.bin</span><button data-close aria-label="Close">✕</button></div>
@@ -687,6 +709,7 @@ let FILL = "symbol", TEXT_SRC = "MERRYCHRISTMAS";
 let msgs = [];
 let angle = 0.6, vel = CONFIG.SPIN, spinDir = 1, t = 0;
 let focus = null, hits = [], lettersDrawn = 0;
+let itemDrag = null, topSeq = 0;   // 선물·스노우볼을 잡고 옮기는 중 (마지막에 옮긴 게 맨 앞)
 let LEVEL = 0, ackMilestone = 0;
 const DB = (CONFIG.FIREBASE_DB_URL || "").replace(/\/+$/, "");
 const PREVIEW = Math.max(0, Math.min(500, parseInt(new URLSearchParams(location.search).get("preview") || "0", 10) || 0));
@@ -771,17 +794,23 @@ function proj(x, y, z){
 }
 
 /* ---------------- 메시지 배치 ---------------- */
+// 선물·스노우볼은 땅바닥 랜덤 위치에 가만히 놓여요. 드래그로 옮긴 위치는 이 기기에 기억돼요.
+const POS_KEY = "mytree.groundPos";
+let groundPos = {};
+try { groundPos = JSON.parse(localStorage.getItem(POS_KEY) || "{}") || {}; } catch(_){}
+function saveGroundPos(m){
+  groundPos[m.id] = +m.gx.toFixed(4);
+  try { localStorage.setItem(POS_KEY, JSON.stringify(groundPos)); } catch(_){}
+}
+const groundSpread = () => Math.min(W * 0.46, scale * 0.78);
 function prepare(m){
   const r = rng(hashStr(m.id));
-  if (m.kind === "globe"){
+  if (m.kind === "globe" || m.kind === "gift"){
     let gx = r() * 2 - 1;
     if (Math.abs(gx) < 0.22) gx = Math.sign(gx || 1) * (0.22 + r() * 0.2);   // 트리 줄기 바로 앞은 피해서
-    m.gx = gx;
+    m.gx = typeof groundPos[m.id] === "number" ? groundPos[m.id] : gx;
     const th = r() * TAU;
     m.x = Math.cos(th) * 0.4; m.z = Math.sin(th) * 0.4; m.y = GIFT_Y; m.theta = th;
-  } else if (m.kind === "gift"){
-    const th = r() * TAU, rad = 0.12 + r() * 0.5;
-    m.x = Math.cos(th) * rad; m.z = Math.sin(th) * rad; m.y = GIFT_Y; m.theta = th;
   } else {
     const h = 0.16 + r() * 0.78, th = r() * TAU;
     const rad = radiusAt(h) * 0.97 + 0.03;
@@ -1257,10 +1286,15 @@ function frame(now){
     if (m._del){ m._c = -1; continue; }   // 삭제된 편지는 트리에서 빠지고 쓰레기통으로
     proj(m.x, m.y, m.z);
     let c = (PX / cw) | 0, r = (PY / ch) | 0;
-    if (m.kind === "gift") r = groundRow - 1;                       // 선물은 땅바닥에 딱 붙어서 (트리와 함께 빙글)
-    if (m.kind === "globe"){                                          // 스노우볼은 돌지 않고 제자리에
-      const spread = Math.min(W * 0.46, scale * 0.78);
-      c = Math.round((cx + m.gx * spread) / cw); r = groundRow - 1; PZ = 0.5;
+    if (m.kind === "globe" || m.kind === "gift"){                    // 선물·스노우볼은 돌지 않고 땅바닥 제자리에
+      c = Math.max(4, Math.min(cols - 5, Math.round((cx + m.gx * groundSpread()) / cw)));
+      r = groundRow - 1; PZ = 0.5 + k * 1e-5 + (m._top || 0);
+      if (m._hop){                                                    // 클릭하면 통통 튀어요
+        const a = t - m._hop;
+        if (a < 0.75) r -= Math.round(Math.abs(Math.sin(a / 0.75 * Math.PI * 2)) * (1 - a / 0.75) * 2.6);
+        else m._hop = 0;
+      }
+      if (itemDrag && itemDrag.on && itemDrag.m === m){ r -= 1; PZ = 0.9; }   // 들어 올린 상태
     }
     const mine = !!hlName && (hlName === EVERYONE ? isForAll(m) : m.to === hlName), dim = !!hlName && !mine;
     const hl = !!(focus && focus.id === m.id) || (mine && Math.sin(t * 4 + k) > 0.55);
@@ -1483,16 +1517,42 @@ try { localEggs = new Set(JSON.parse(localStorage.getItem(EGG_KEY) || "[]")); } 
 const EGG_IDS = new Set(EGGS.map(e => e[0]));
 eggs = new Set([...localEggs].filter(id => EGG_IDS.has(id)));
 let eggsLoaded = false;
+let eggBy = {};   // 이스터에그를 제일 먼저 찾은 사람 이름 (Firebase /eggs/{id}/by)
 function egg(id, msg){
   const isNew = !eggs.has(id);
   eggs.add(id); localEggs.add(id);
   try { localStorage.setItem(EGG_KEY, JSON.stringify([...localEggs])); } catch(_){}
   if (isNew && DB && !PREVIEW){
-    fetch(`${DB}/eggs/${id}.json`, { method: "PUT", body: JSON.stringify({ t: Date.now() }) }).catch(() => {});
-  }
-  toast(isNew ? `🥚 New easter egg discovered! (${eggs.size}/${EGG_TOTAL} found by everyone) ${msg}` : `${msg} (already discovered)`, 3400);
+    // 아직 아무도 못 찾은 에그일 때만 저장돼요 (규칙: 이미 있으면 거절) → 성공하면 내가 1등!
+    fetch(`${DB}/eggs/${id}.json`, { method: "PUT", body: JSON.stringify({ t: Date.now() }) })
+      .then(res => { if (res.ok) setTimeout(() => askEggName(id), 1800); }).catch(() => {});
+  } else if (isNew && PREVIEW) setTimeout(() => askEggName(id), 1800);
+  const by = eggBy[id] ? ` · first found by ${eggBy[id]}` : "";
+  toast(isNew ? `🥚 New easter egg discovered! (${eggs.size}/${EGG_TOTAL} found by everyone) ${msg}` : `${msg} (already discovered${by})`, 3400);
   renderGuide(); updateHud();
 }
+let eggNameId = null;
+function askEggName(id){
+  const e = EGGS.find(x => x[0] === id); if (!e) return;
+  eggNameId = id;
+  $("#enIcon").textContent = e[1];
+  $("#enTitle").textContent = `You found “${e[2]}” first!`;
+  let last = ""; try { last = localStorage.getItem("mytree.eggName") || ""; } catch(_){}
+  $("#enInput").value = last;
+  $("#eggName").classList.remove("hidden");
+  setTimeout(() => $("#enInput").focus(), 60);
+}
+$("#enForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const name = $("#enInput").value.trim().slice(0, 12), id = eggNameId;
+  if (!name || !id) return;
+  try { localStorage.setItem("mytree.eggName", name); } catch(_){}
+  eggBy[id] = name; eggNameId = null;
+  $("#eggName").classList.add("hidden");
+  if (DB && !PREVIEW) fetch(`${DB}/eggs/${id}/by.json`, { method: "PUT", body: JSON.stringify(name) }).catch(() => {});
+  toast(`🏅 Signed! Everyone will see that ${name} found it first.`, 3000);
+  renderGuide();
+});
 async function loadEggs(){
   if (!DB || PREVIEW) return;
   try {
@@ -1503,6 +1563,7 @@ async function loadEggs(){
     for (const id of localEggs){
       if (EGG_IDS.has(id) && !data[id]) fetch(`${DB}/eggs/${id}.json`, { method: "PUT", body: JSON.stringify({ t: Date.now() }) }).catch(() => {});
     }
+    for (const [id, v] of Object.entries(data)) if (v && typeof v.by === "string" && v.by.trim()) eggBy[id] = v.by.trim().slice(0, 12);
     const next = new Set([...Object.keys(data), ...localEggs].filter(id => EGG_IDS.has(id)));
     const gained = next.size - eggs.size;
     if (eggsLoaded && gained > 0) toast(`🥚 Someone just found a new easter egg! (${next.size}/${EGG_TOTAL})`, 3400);
@@ -1565,6 +1626,7 @@ function renderGuide(){
     li.innerHTML = '<span class="mk"></span><span class="tx"></span>';
     li.querySelector(".mk").textContent = icon;
     li.querySelector(".tx").textContent = EGG_HINTS[id];
+    if (eggBy[id]){ const b = document.createElement("span"); b.className = "by"; b.textContent = `🏅 first found by ${eggBy[id]}`; li.querySelector(".tx").appendChild(b); }
     ul.appendChild(li);
   }
 }
@@ -1833,15 +1895,30 @@ function firstGesture(e){
 
 /* ---------------- 입력: 드래그·휠로 회전 / 클릭 ---------------- */
 let downX = 0, downY = 0, lastX = 0, lastT = 0, moved = 0;
+function hop(m){
+  m._hop = t;
+  for (let i = 0; i < 8; i++) parts.push({ x: m._c + rand(-3, 3), y: groundRow - 1, vx: rand(-2, 2), vy: -rand(1, 3), life: 0, max: rand(0.4, 0.8), pal: ["#ffffff", "#dff3ff"], spark: true, front: true });
+}
 document.addEventListener("pointerdown", wake, true);
 cv.addEventListener("pointerdown", e => {
   if (floatDown(e)) return;   // 떠다니는 편지를 잡았으면 트리는 그대로
   dragging = true; focus = null; cv.classList.add("drag");
   downX = lastX = e.clientX; downY = e.clientY; lastT = performance.now(); moved = 0;
+  const hh = hitTest(e.clientX, e.clientY), hm = hh && msgs[hh.k];
+  itemDrag = hm && !hm._del && (hm.kind === "gift" || hm.kind === "globe") ? { m: hm, dx: hm._px - e.clientX, on: false } : null;
   cv.setPointerCapture(e.pointerId);
 });
 cv.addEventListener("pointermove", e => {
   if (floatDrag){ floatMove(e); return; }
+  if (dragging && itemDrag){
+    moved = Math.max(moved, Math.hypot(e.clientX - downX, e.clientY - downY));
+    if (moved >= 6 && !itemDrag.on){ itemDrag.on = true; cv.classList.add("grabItem"); }
+    if (itemDrag.on){
+      const sp = groundSpread(), lo = (4.5 * cw - cx) / sp, hi = (W - 5.5 * cw - cx) / sp;
+      itemDrag.m.gx = Math.max(lo, Math.min(hi, (e.clientX + itemDrag.dx - cx) / sp));
+    }
+    return;
+  }
   if (dragging){
     const dx = e.clientX - lastX, now = performance.now();
     angle += dx * 0.012;
@@ -1858,7 +1935,11 @@ const near = (h, e) => h && Math.hypot(h.x - e.clientX, h.y - e.clientY) < h.r;
 function endDrag(e){
   if (floatDrag){ floatUp(); return; }
   if (!dragging) return;
-  dragging = false; cv.classList.remove("drag");
+  dragging = false; cv.classList.remove("drag", "grabItem");
+  if (itemDrag){
+    const it = itemDrag; itemDrag = null;
+    if (it.on){ it.m._top = (topSeq += 0.002); saveGroundPos(it.m); hop(it.m); return; }   // 내려놓을 때도 톡
+  }
   if (Math.abs(vel) > 0.3) spinDir = Math.sign(vel);
   if (moved >= 8) return;
   // 이스터에그: 트리 밑동(줄기)을 누르면 쿠키 친구가 빼꼼 (선물보다 먼저, 좁은 범위로 확인)
@@ -1870,7 +1951,12 @@ function endDrag(e){
   }
   if (globeHit && Math.abs(globeHit.x - e.clientX) < Math.max(14, cw * 3) && Math.abs(globeHit.y - e.clientY) < Math.max(14, ch * 2)){ shakeSecretGlobe(); return; }
   const h = hitTest(e.clientX, e.clientY);
-  if (h){ openCard(msgs[h.k]); return; }
+  if (h){
+    const hm = msgs[h.k];
+    if (hm.kind === "gift" || hm.kind === "globe"){ hop(hm); setTimeout(() => openCard(hm), 420); }
+    else openCard(hm);
+    return;
+  }
   if (near(starHit, e)){
     starTaps.push(t); while (starTaps.length && starTaps[0] < t - 3) starTaps.shift();
     if (starTaps.length >= 5){
@@ -1897,7 +1983,7 @@ function endDrag(e){
 }
 cv.addEventListener("pointerup", endDrag);
 cv.addEventListener("pointerleave", () => { if (!floatDrag) setHoverFloat(null); });
-cv.addEventListener("pointercancel", () => { dragging = false; cv.classList.remove("drag"); });
+cv.addEventListener("pointercancel", () => { dragging = false; cv.classList.remove("drag", "grabItem"); if (itemDrag && itemDrag.on) saveGroundPos(itemDrag.m); itemDrag = null; });
 cv.addEventListener("wheel", e => {
   e.preventDefault(); wake();
   const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
