@@ -160,7 +160,7 @@
   @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px) rotate(-3deg)}75%{transform:translateX(3px) rotate(3deg)}}
   /* ---- 바닥의 메일함 마을 ---- */
   #street{position:fixed;left:0;right:0;bottom:0;height:calc(var(--street) + env(safe-area-inset-bottom));padding:6px 10px env(safe-area-inset-bottom);
-    display:flex;align-items:flex-end;gap:2px;overflow-x:auto;overflow-y:hidden;z-index:4;scrollbar-width:none;
+    display:flex;align-items:flex-end;gap:2px;overflow-x:auto;overflow-y:hidden;z-index:4;scrollbar-width:none;padding-right:84px;
     background:linear-gradient(to top, rgba(4,8,10,.92), rgba(4,8,10,.55) 70%, rgba(4,8,10,0));}
   #street::-webkit-scrollbar{display:none}
   #street .inner{display:flex;gap:2px;margin:0 auto;align-items:flex-end;position:relative;padding-bottom:4px}
@@ -189,11 +189,100 @@
   @media (max-width: 600px){
     :root{--street: 88px}
     .hut{font-size:8px} .hut .nm{font-size:10px}
-    #street{-webkit-mask-image:linear-gradient(to right, transparent 0, #000 14px, #000 calc(100% - 28px), transparent);mask-image:linear-gradient(to right, transparent 0, #000 14px, #000 calc(100% - 28px), transparent)}
+    #street{padding-right:70px;-webkit-mask-image:linear-gradient(to right, transparent 0, #000 14px, #000 calc(100% - 96px), transparent calc(100% - 66px));mask-image:linear-gradient(to right, transparent 0, #000 14px, #000 calc(100% - 96px), transparent calc(100% - 66px))}
+    #trash{font-size:8.5px} #trash .pile{font-size:8px;max-width:60px}
   }
+  .photoRow{display:flex;align-items:center;gap:10px}
+  .sheet label.pick{display:inline-block;margin:0;padding:9px 12px;border-radius:10px;border:1px dashed rgba(140,255,170,.35);color:#cfe9d6;
+    font:13px var(--code);cursor:pointer}
+  .sheet label.pick:hover{border-color:#9dffb0}
+  #fPhotoPrev{position:relative}
+  #fPhotoPrev img{display:block;height:64px;max-width:120px;object-fit:cover;border-radius:8px;border:1px solid rgba(255,255,255,.2)}
+  #fPhotoPrev button{position:absolute;top:-8px;right:-8px;width:22px;height:22px;border-radius:50%;border:0;background:#ff4d6d;color:#fff;font:12px var(--mono);cursor:pointer}
+  #cPhotoWrap{margin:2px 0 10px;text-align:center}
+  #cPhotoWrap img{max-width:100%;max-height:42vh;border-radius:12px;border:1px solid rgba(255,255,255,.15);cursor:zoom-in}
+  #cPhotoWrap img.big{max-height:none;cursor:zoom-out}
+  #cPhotoWrap .ld{font:12px var(--code);color:#7fa58c;padding:14px 0}
+  #card .sheet{max-height:92vh;overflow:auto}
+  /* ---- 좋아요 / 싫어요 / 신고 ---- */
+  .react{display:flex;justify-content:center;gap:6px;margin-top:12px}
+  .react button{border:1px solid rgba(140,255,170,.22);background:rgba(255,255,255,.03);color:#bcd8c4;border-radius:999px;
+    padding:3px 10px;font:11.5px var(--code);cursor:pointer;line-height:1.6}
+  .react button:hover{border-color:rgba(140,255,170,.5)}
+  .react button.on{border-color:#ffe680;color:#fff3b0;background:rgba(255,230,128,.1)}
+  .react button.rep{color:#8a9a90;border-style:dashed}
+  .react button.rep.on{color:#ff8fa8;border-color:#ff8fa8;background:rgba(255,100,130,.08)}
+  .react button.rep.ask{color:#ffb3c1;border-color:#ff8fa8}
+  /* 신고로 삭제된 편지: 회색으로 바랜 느낌 */
+  #card .sheet.removed{filter:grayscale(1) brightness(.8)}
+  #card .sheet.removed .msg{color:#8b8f94;font-style:italic;letter-spacing:.02em}
+  #mbList li.removed button, .board li.removed button{filter:grayscale(1);opacity:.55;border-style:dashed}
+  #mbList li.removed .pv, .board li.removed .pv{font-style:italic;color:#8b8f94}
+  /* 마을회관 보드 */
+  .board{margin:12px 0 4px;padding:10px 12px;border:1px solid rgba(255,230,128,.25);border-radius:12px;background:rgba(255,230,128,.04)}
+  .board h4{margin:0 0 6px;font:700 12px var(--code);color:#ffe680}
+  .board h4:not(:first-child){margin-top:10px}
+  .board ul{list-style:none;margin:0;padding:0}
+  .board li button{display:flex;gap:8px;align-items:center;width:100%;text-align:left;background:none;border:1px solid transparent;border-radius:8px;
+    padding:5px 6px;color:#e6fbe9;cursor:pointer;font:12px var(--code)}
+  .board li button:hover{border-color:rgba(140,255,170,.3)}
+  .board .rk{flex:0 0 auto;width:18px;color:#ffe680;font-weight:700}
+  .board .pv{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--kr)}
+  .board .sc{flex:0 0 auto;color:#9fc9ab}
+  .board .none{color:#6f8f79;font:12px var(--code);padding:2px 6px}
+  /* 배경에 떠다니는 베스트 편지 */
+  .bestFloat{position:fixed;left:0;top:17vh;pointer-events:none;white-space:nowrap;
+    font:600 clamp(12px,2.6vw,17px)/1.4 var(--code);color:rgba(255,240,200,.5);text-shadow:0 0 12px rgba(255,210,120,.35);
+    animation:floatX 60s linear infinite;animation-delay:-24s}
+  .bestFloat:nth-child(2){top:29vh;font-size:clamp(11px,2.3vw,15px);color:rgba(235,240,255,.42);animation-duration:74s;animation-delay:-52s}
+  .bestFloat:nth-child(3){top:41vh;font-size:clamp(11px,2.1vw,14px);color:rgba(220,255,230,.36);animation-duration:88s;animation-delay:-8s}
+  .bestFloat .in{display:inline-block;animation:bob 5s ease-in-out infinite}
+  .bestFloat:nth-child(2) .in{animation-duration:6.5s}
+  .bestFloat:nth-child(3) .in{animation-duration:7.5s}
+  .bestFloat .m{display:block;font-size:.72em;opacity:.85;margin-top:2px}
+  @keyframes floatX{from{transform:translateX(-100%)}to{transform:translateX(100vw)}}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+  /* 오른쪽 밑 구석 쓰레기통 */
+  #trash{position:fixed;right:6px;bottom:calc(4px + env(safe-area-inset-bottom));z-index:6;background:none;border:0;padding:0;cursor:pointer;
+    color:#7f8a85;font:10px/1.1 var(--code);text-align:center;-webkit-tap-highlight-color:transparent}
+  #trash pre{margin:0;font:inherit;white-space:pre}
+  #trash .pile{color:#9aa39e;min-height:1.1em;font-size:9px;letter-spacing:.05em;max-width:72px;overflow:hidden;margin:0 auto}
+  #trash .cnt{display:block;font-size:10px;color:#9aa39e;margin-top:2px}
+  #trash .broken{display:none;color:#a7a7a7}
+  #trash.is-broken .bin{display:none}
+  #trash.is-broken .broken{display:block}
+  #trash.gulp .bin{animation:gulp .45s}
+  #trash.shake{animation:shake .3s}
+  @keyframes gulp{0%,100%{transform:scale(1)}40%{transform:scale(1.18,.86)}70%{transform:scale(.94,1.08)}}
+  #trashList{list-style:none;margin:10px 0 0;padding:0;max-height:48vh;overflow:auto}
+  #trashList li{padding:9px 10px;margin-bottom:8px;border:1px dashed rgba(255,255,255,.14);border-radius:10px;color:#8b8f94;font:13px/1.6 var(--code);
+    filter:grayscale(1);word-break:break-all}
+  #trashList li small{display:block;color:#5d6660;font-size:11px;margin-top:3px}
+  /* 목록 안의 작은 반응 버튼 */
+  .rx{display:inline-flex;gap:3px;flex:0 0 auto}
+  .rx button{border:1px solid rgba(140,255,170,.18);background:rgba(0,0,0,.25);color:#b9d3c1;border-radius:999px;padding:1px 6px;
+    font:11px/1.5 var(--code);cursor:pointer;min-width:26px}
+  .rx button:hover{border-color:rgba(140,255,170,.5)}
+  .rx button.on{border-color:#ffe680;color:#fff3b0;background:rgba(255,230,128,.12)}
+  .rx button.ask{border-color:#ff8fa8;color:#ffb3c1;animation:shake .3s}
+  #mbList li{position:relative}
+  #mbList li .rx{position:absolute;right:10px;bottom:16px}
+  #mbList .rx button, .board .rx button{display:inline-block;width:auto;margin:0;padding:1px 6px;border-radius:999px;font:11px/1.5 var(--code);
+    background:rgba(0,0,0,.35);border:1px solid rgba(140,255,170,.18);color:#b9d3c1;box-shadow:none}
+  #mbList .rx button.on, .board .rx button.on{border-color:#ffe680;color:#fff3b0;background:rgba(255,230,128,.12)}
+  #mbList .rx button.ask, .board .rx button.ask{border-color:#ff8fa8;color:#ffb3c1}
+  #mbList li.removed .rx{filter:none;opacity:1}
+  .board li{display:flex;align-items:center;gap:6px}
+  .board li button.main{flex:1;min-width:0}
 </style>
 </head>
 <body>
+<!-- 배경에 떠다니는 베스트 편지 -->
+<div id="bestWrap" aria-hidden="true">
+  <div class="bestFloat hidden"><span class="in"><span class="q"></span><span class="m"></span></span></div>
+  <div class="bestFloat hidden"><span class="in"><span class="q"></span><span class="m"></span></span></div>
+  <div class="bestFloat hidden"><span class="in"><span class="q"></span><span class="m"></span></span></div>
+</div>
 <canvas id="c" aria-label="Spinning ASCII Christmas tree"></canvas>
 
 <div id="hud"></div>
@@ -217,6 +306,12 @@
       <label for="fText">Message</label>
       <textarea id="fText" rows="3" maxlength="80" placeholder="Merry Christmas! Thanks for this year :)" required></textarea>
       <div class="count"><span id="fCount">0</span>/80</div>
+      <label>Photo (optional)</label>
+      <div class="photoRow">
+        <label class="pick" for="fPhoto" id="fPhotoBtn">📷 Add a photo</label>
+        <input type="file" id="fPhoto" accept="image/*" hidden>
+        <div id="fPhotoPrev" class="hidden"><img id="fPhotoImg" alt="Selected photo"><button type="button" id="fPhotoDel" aria-label="Remove photo">✕</button></div>
+      </div>
       <div class="two">
         <div><label for="fFrom">From</label><select id="fFrom"></select></div>
         <div><label for="fTo">To</label><select id="fTo"></select></div>
@@ -240,9 +335,15 @@
     <div class="sheetHead"><span id="cHead">// wish.open()</span><button data-close aria-label="Close">✕</button></div>
     <div class="sheetBody">
       <div class="icon" id="cIcon">🎁</div>
+      <div id="cPhotoWrap" class="hidden"></div>
       <div class="msg" id="cMsg"></div>
       <div class="from" id="cFrom"></div>
       <div class="date" id="cDate"></div>
+      <div class="react" id="cReact">
+        <button type="button" id="rLike" aria-label="Like">👍 <span>0</span></button>
+        <button type="button" id="rDis" aria-label="Dislike">👎 <span>0</span></button>
+        <button type="button" id="rRep" class="rep" aria-label="Report">🚩 Report</button>
+      </div>
       <div class="tr">
         <div class="trRow"><select id="trLang" aria-label="Translate to"></select><button id="trBtn">🌐 Translate</button></div>
         <div class="trOut hidden" id="trOut"></div>
@@ -259,6 +360,7 @@
     <div class="sheetBody">
       <h2 id="mbTitle">📬 Mailboxes</h2>
       <div id="mbPersonView">
+        <div class="board hidden" id="mbBoard"></div>
         <label class="sw"><input type="checkbox" id="hlMine"> <span id="hlLabel"></span></label>
       <ul id="mbList"></ul>
       </div>
@@ -279,6 +381,33 @@
 </aside>
 
 <nav id="street" aria-label="Mailboxes"><div class="inner" id="streetInner"></div></nav>
+
+
+<!-- 신고된 편지가 들어가는 쓰레기통 -->
+<button id="trash" type="button" aria-label="Trash can">
+  <pre class="pile" id="trashPile"></pre>
+  <pre class="bin">  .____.
+ [______]
+  |::::|
+  |::::|
+  '----'</pre>
+  <pre class="broken">  . _ ..
+ [_/ \__]
+  |:/ \:|
+   \ | /
+  '-/ \-'</pre>
+  <span class="cnt" id="trashCnt">trash · 0</span>
+</button>
+<div class="overlay hidden" id="trashView">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="tvTitle">
+    <div class="sheetHead"><span>// trash.bin</span><button data-close aria-label="Close">✕</button></div>
+    <div class="sheetBody">
+      <h2 id="tvTitle">🗑 Trash</h2>
+      <p class="lead" id="tvLead"></p>
+      <ul id="trashList"></ul>
+    </div>
+  </div>
+</div>
 
 <div id="toast"></div>
 
@@ -377,6 +506,7 @@ const STAR_CH = "*#@&*";
 const STAR_COL = ["#fff6b0","#ffe066","#ffd23f","#ffc21a"];
 const GIFT_ART = ["  \\_/  ","[==|==]","[##|##]","[##|##]"];
 const ORN_ART = ["  _o_  ", " /'@@\\ ", "(@@@@@)", " \\@@@/ "];
+const ORN_ART_S = [" _o_ ", "('@@)", " \\@/ "];   // 모바일(좁은 화면)용 작은 오너먼트
 const SANTA = [
   "   _*_                \\|/      \\|/  ",
   "  (^o^)____ ~~~~~~~~~(.@)~~~~~~(.@) ",
@@ -598,6 +728,14 @@ function stepParticles(dt){
       continue;
     }
     if (p.life > p.max){ parts.splice(i, 1); continue; }
+    if (p.fly){
+      if (p.life < 0) continue;
+      const k = Math.min(1, p.life / p.max), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+      p.x = p.sx + (p.tx - p.sx) * e;
+      p.y = p.sy + (p.ty - p.sy) * e - Math.sin(e * Math.PI) * rows * p.arc;
+      continue;
+    }
+    if (p.spill && p.y > groundRow - 1){ p.y = groundRow - 1; p.vy *= -0.3; p.vx *= 0.6; }
     if (p.shape){
       const k = Math.min(1, p.life / 0.55), e = 1 - Math.pow(1 - k, 3);
       const droop = Math.max(0, p.life - 1.1);
@@ -614,6 +752,10 @@ function drawParticles(){
     if (p.rocket){
       put(p.x | 0, p.y | 0, -60, "|", p.pal[1], 0, 0);
       put(p.x | 0, (p.y | 0) + 1, -60, ".", "#ffb36b", 0, 0);
+    } else if (p.fly){
+      if (p.life < 0) continue;
+      const k = p.life / p.max;
+      put(p.x | 0, p.y | 0, 0.99, p.chr, k < 0.5 ? "#d5d9dd" : "#8d9297", 0, 0);
     } else if (p.env){
       const col = p.gold ? "#ffe680" : "#f4f8ff";
       for (let rr = 0; rr < 3; rr++) for (let j = 0; j < 6; j++){
@@ -875,6 +1017,7 @@ function frame(now){
   const blink = (t * 6 | 0) % 2 === 0;
   for (let k = 0; k < msgs.length; k++){
     const m = msgs[k];
+    if (m._del){ m._c = -1; continue; }   // 삭제된 편지는 트리에서 빠지고 쓰레기통으로
     proj(m.x, m.y, m.z);
     const c = (PX / cw) | 0, r = (PY / ch) | 0;
     const mine = !!hlName && (hlName === EVERYONE ? isForAll(m) : m.to === hlName), dim = !!hlName && !mine;
@@ -891,9 +1034,10 @@ function frame(now){
       }
       m._c = c; m._r = r - 1; m._px = (c + 0.5) * cw; m._py = (r - 0.5) * ch;
     } else {
-      const z = PZ + 0.04, c0 = c - 3, r0 = r - 2, sh = m.shade;
-      for (let gr = 0; gr < 4; gr++) for (let gc = 0; gc < 7; gc++){
-        const chh = ORN_ART[gr][gc]; if (chh === " ") continue;
+      const small = W < 600, OA = small ? ORN_ART_S : ORN_ART, ow = OA[0].length;
+      const z = PZ + 0.04, c0 = c - (ow >> 1), r0 = r - (small ? 1 : 2), sh = m.shade;
+      for (let gr = 0; gr < OA.length; gr++) for (let gc = 0; gc < ow; gc++){
+        const chh = OA[gr][gc]; if (chh === " ") continue;
         const col = dim ? (gr === 0 ? "#4a4636" : "#33403a")
           : gr === 0 ? (chh === "o" ? "#fff2b0" : "#e9c45a")
           : hl && blink ? "#ffffff"
@@ -988,7 +1132,7 @@ function frame(now){
     hits.push({ x: m._px, y: m._py, k, r: Math.max(22, cw * 4) });
     if (m._dim) continue;
     const boost = m._mine ? 1.7 : 1;
-    const rad = Math.max(14, fs * (m.kind === "gift" ? 4 : 3.8)) * boost, hg = ctx.createRadialGradient(m._px, m._py, 0, m._px, m._py, rad);
+    const rad = Math.max(W < 600 ? 10 : 14, fs * (m.kind === "gift" ? 4 : (W < 600 ? 2.6 : 3.8))) * boost, hg = ctx.createRadialGradient(m._px, m._py, 0, m._px, m._py, rad);
     hg.addColorStop(0, (boost > 1 ? "#ffe680" : m.col) + (boost > 1 ? "90" : "78")); hg.addColorStop(1, m.col + "00");
     ctx.globalAlpha = 0.75 + 0.25 * Math.sin(t * 3 + k);
     ctx.fillStyle = hg; ctx.fillRect(m._px - rad, m._py - rad, rad * 2, rad * 2);
@@ -1057,13 +1201,14 @@ const EGGS = [
   ["xmas",   "🎄", "Christmas Day",  "Visit on December 24 or 25."],
   ["mail",   "📮", "Mail Storm",     "Knock on a mailbox house 5 times, fast."],
   ["wish",   "🌠", "Wishing Star",   "Find the one special star in the sky and tap it."],
+  ["trash",  "🗑", "Trash Smasher",  "Keep tapping the trash can until it breaks."],
 ];
 const EGG_TOTAL = EGGS.length;
 const EGG_HINTS = {
   spin: "Spin the tree round and round?", star: "Poke the star a few times?", moon: "Touch the moon?",
   cat: "Bother a napping cat?", sleep: "Leave the tree alone for a while?", konami: "↑ ↑ ↓ ↓ ← → ← → B A?",
   word: "A magic word in your message?", xmas: "Come back on Christmas?",
-  mail: "Knock on a mailbox again and again?", wish: "One star in the sky looks a little different?",
+  mail: "Knock on a mailbox again and again?", wish: "One star in the sky looks a little different?", trash: "Tap the trash can again and again?",
 };
 let eggListOpen = false;
 // 이스터에그는 모두가 공유해요: 누군가 찾으면 Firebase /eggs 에 기록되고 모두의 카운트가 올라가요
@@ -1463,15 +1608,19 @@ function openCard(m){
   $("#cIcon").style.filter = `drop-shadow(0 0 10px ${m.col})`;
   $("#cHead").textContent = m.kind === "gift" ? "// gift.open()" : "// ornament.read()";
   $("#cMsg").textContent = m.text;
+  showCardPhoto(m);
   $("#cFrom").textContent = `From. ${m.name || "Anonymous"}  →  To. ${m.to || "Everyone 🎄"}`;
   $("#trOut").classList.add("hidden"); $("#trOut").textContent = "";
   markRead(m.id);
   $("#cDate").textContent = m.t ? new Date(m.t).toLocaleString("en-US", { month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
+  renderReact(m);
   $("#card").classList.remove("hidden");
 }
 function openRandom(){
   if (!msgs.length){ toast("No messages yet. Be the first to hang one! 🎄"); return; }
-  const pool = msgs.length > 1 ? msgs.filter(m => m.id !== currentId) : msgs;
+  const live = msgs.filter(m => !m._del);
+  if (!live.length){ toast("No messages yet. Be the first to hang one! 🎄"); return; }
+  const pool = live.length > 1 ? live.filter(m => m.id !== currentId) : live;
   openCard(pick(pool));
 }
 $("#btnRandom").onclick = openRandom;
@@ -1494,7 +1643,7 @@ const lettersFor = name => msgs.filter(m => name === EVERYONE ? isForAll(m) : m.
 const boxLabel = name => name === EVERYONE ? "Everyone" : name;
 function updateMail(){
   const r = readSet();
-  unreadIds = new Set(msgs.filter(m => !r.has(m.id)).map(m => m.id));
+  unreadIds = new Set(msgs.filter(m => !m._del && !r.has(m.id)).map(m => m.id));
   renderStreet();
   if (!$("#mailbox").classList.contains("hidden")) renderMailbox();
 }
@@ -1526,7 +1675,7 @@ function renderStreet(){
   const r = readSet();
   box.innerHTML = "";
   for (const name of [EVERYONE, ...CONFIG.MEMBERS]){
-    const list = lettersFor(name), unread = list.filter(m => !r.has(m.id)).length;
+    const list = lettersFor(name).filter(m => !m._del), unread = list.filter(m => !r.has(m.id)).length;
     const b = document.createElement("button");
     b.type = "button";
     b.className = "hut" + (name === EVERYONE ? " hall" : "") + (unread ? " has" : "") + (list.length ? " full" : "") + (hlName === name ? " on" : "");
@@ -1575,20 +1724,24 @@ function renderMailbox(){
   $("#mbTitle").textContent = all ? "🎄 Letters for everyone" : `📬 ${mbView}'s mailbox`;
   $("#hlLabel").textContent = all ? "✨ Make only the letters for everyone glow on the tree" : `✨ Make only ${mbView}'s ornaments & gifts glow on the tree`;
   $("#hlMine").checked = hlName === mbView;
+  $("#mbBoard").classList.toggle("hidden", !all);
+  if (all) renderBoard();
   const ul = $("#mbList"); ul.innerHTML = "";
   const list = lettersFor(mbView);
   if (!list.length){ ul.innerHTML = '<li class="empty">No letters yet… they might be on their way 🎄</li>'; return; }
   for (const m of list){
-    const li = document.createElement("li"); li.className = r.has(m.id) ? "" : "unread";
+    const li = document.createElement("li"); li.className = m._del ? "removed" : r.has(m.id) ? "" : "unread";
     li.innerHTML = '<button type="button"><span class="ic"></span><span class="body"><span class="top"></span><span class="pv"></span><span class="dt"></span></span></button>';
     li.querySelector(".ic").textContent = m.kind === "gift" ? "🎁" : "🔴";
     li.querySelector(".ic").style.filter = `drop-shadow(0 0 6px ${m.col})`;
     const top = li.querySelector(".top");
-    if (!r.has(m.id)){ const n = document.createElement("span"); n.className = "new"; n.textContent = "NEW · "; top.appendChild(n); }
-    top.appendChild(document.createTextNode("From. " + (m.name || "Anonymous") + (all && m.to ? `  →  To. ${m.to}` : "")));
-    li.querySelector(".pv").textContent = m.text;
+    if (!m._del && !r.has(m.id)){ const n = document.createElement("span"); n.className = "new"; n.textContent = "NEW · "; top.appendChild(n); }
+    top.appendChild(document.createTextNode("From. " + (m.name || "Anonymous") + (all && m.to ? `  →  To. ${m.to}` : "") + (m.p && !m._del ? "  📷" : "") ));
+    li.querySelector(".pv").textContent = m._del ? RM_TEXT : m.text;
+    if (m._del) li.querySelector(".ic").textContent = "🗑";
     li.querySelector(".dt").textContent = m.t ? new Date(m.t).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
     li.querySelector("button").onclick = () => { $("#mailbox").classList.add("hidden"); document.body.classList.remove("mbopen"); openCard(m); };
+    li.appendChild(makeRx(m));
     ul.appendChild(li);
   }
 }
@@ -1683,6 +1836,72 @@ document.querySelectorAll(".overlay").forEach(ov => {
 });
 document.addEventListener("keydown", e => { if (e.key === "Escape"){ document.querySelectorAll(".overlay").forEach(o => o.classList.add("hidden")); document.body.classList.remove("mbopen"); } });
 
+/* ---------------- 사진 첨부 ----------------
+   사진은 브라우저에서 작은 JPEG로 압축해서 Realtime Database의 /photos/{편지id} 에 저장해요.
+   (Firebase 사진 저장소(Cloud Storage)는 유료 요금제가 필요해서 이렇게 해요)
+   편지 목록에는 사진이 안 들어가서 15초마다 받는 데이터는 그대로 가볍고, 사진은 편지를 열 때만 받아와요. */
+const PHOTO_MAX = 180000;   // base64 글자 수 상한 (약 130KB)
+let photoData = "";
+const photoCache = new Map();
+async function compressImage(file){
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
+    let max = 800, q = 0.72, out = "";
+    for (let k = 0; k < 7; k++){
+      const sc = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement("canvas");
+      c.width = Math.max(1, Math.round(img.naturalWidth * sc)); c.height = Math.max(1, Math.round(img.naturalHeight * sc));
+      const x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height); x.drawImage(img, 0, 0, c.width, c.height);
+      out = c.toDataURL("image/jpeg", q);
+      if (out.length <= PHOTO_MAX) return out;
+      max = Math.round(max * 0.82); q = Math.max(0.5, q - 0.05);
+    }
+    return "";
+  } finally { URL.revokeObjectURL(url); }
+}
+function clearPhoto(){
+  photoData = ""; $("#fPhoto").value = "";
+  $("#fPhotoPrev").classList.add("hidden"); $("#fPhotoBtn").textContent = "📷 Add a photo";
+}
+$("#fPhoto").addEventListener("change", async e => {
+  const f = e.target.files && e.target.files[0]; if (!f) return;
+  $("#fPhotoBtn").textContent = "⏳ Preparing…";
+  try {
+    const data = await compressImage(f);
+    if (!data) throw new Error("too big");
+    photoData = data; $("#fPhotoImg").src = data;
+    $("#fPhotoPrev").classList.remove("hidden"); $("#fPhotoBtn").textContent = "📷 Change photo";
+  } catch(_){
+    clearPhoto(); toast("Couldn't read this photo. Try a JPG or PNG 🙏");
+  }
+});
+$("#fPhotoDel").onclick = clearPhoto;
+async function getPhoto(m){
+  if (m.photo) return m.photo;
+  if (photoCache.has(m.id)) return photoCache.get(m.id);
+  if (!DB || PREVIEW) return null;
+  const res = await fetch(`${DB}/photos/${m.id}.json`, { cache: "force-cache" });
+  if (!res.ok) return null;
+  const v = await res.json();
+  const ok = typeof v === "string" && v.startsWith("data:image/") ? v : null;
+  if (ok) photoCache.set(m.id, ok);
+  return ok;
+}
+async function showCardPhoto(m){
+  const wrap = $("#cPhotoWrap"); wrap.innerHTML = "";
+  if (!m.p || m._del){ wrap.classList.add("hidden"); return; }
+  wrap.classList.remove("hidden");
+  const ld = document.createElement("div"); ld.className = "ld"; ld.textContent = "📷 Loading photo…"; wrap.appendChild(ld);
+  let src = null; try { src = await getPhoto(m); } catch(_){}
+  if (currentId !== m.id || m._del) return;
+  wrap.innerHTML = "";
+  if (!src){ const d = document.createElement("div"); d.className = "ld"; d.textContent = "📷 The photo couldn't be loaded"; wrap.appendChild(d); return; }
+  const img = document.createElement("img"); img.src = src; img.alt = "Photo attached to this letter";
+  img.onclick = () => img.classList.toggle("big");
+  wrap.appendChild(img);
+}
+
 $("#form").addEventListener("submit", async e => {
   e.preventDefault();
   const text = $("#fText").value.trim().slice(0, CONFIG.MAX_TEXT);
@@ -1699,6 +1918,7 @@ $("#form").addEventListener("submit", async e => {
     color: selColor,
     t: Date.now(),
   };
+  if (photoData) raw.p = true;
   const btn = $("#fSubmit"); btn.disabled = true;
   try {
     let id;
@@ -1707,14 +1927,20 @@ $("#form").addEventListener("submit", async e => {
       if (!res.ok) throw new Error("HTTP " + res.status);
       id = (await res.json()).name;
       if (id > lastKey) lastKey = id;
+      if (photoData){
+        const pr = await fetch(`${DB}/photos/${id}.json`, { method: "PUT", body: JSON.stringify(photoData) }).catch(() => null);
+        if (pr && pr.ok) photoCache.set(id, photoData);
+        else setTimeout(() => toast("Your letter is up, but the photo couldn't be uploaded 😢", 3400), 2600);
+      }
     } else id = "l" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
     const m = prepare(sanitize(id, raw));
+    if (photoData && (!DB || PREVIEW)) m.photo = photoData;   // Firebase 없이 쓸 땐 브라우저에 같이 보관
     msgs.push(m);
     if (!DB && !PREVIEW) saveLocal();
     if (!PREVIEW) localStorage.setItem("mytree.lastPost", String(Date.now()));
     onMsgsChanged();
     $("#modal").classList.add("hidden");
-    $("#fText").value = ""; $("#fCount").textContent = "0";
+    $("#fText").value = ""; $("#fCount").textContent = "0"; clearPhoto();
     faceTo(m, 4);
     toast(m.kind === "gift" ? "Your gift is under the tree 🎁" : "Your ornament is on the tree ✨");
     checkWords(text + " " + raw.name);
@@ -1723,6 +1949,270 @@ $("#form").addEventListener("submit", async e => {
     toast("Couldn't save. Please try again in a moment");
   } finally { btn.disabled = false; }
 });
+
+/* ---------------- 좋아요 · 싫어요 · 신고 ----------------
+   기기마다 고유번호(DEVICE)를 만들어 기억하고, Firebase /reactions/{편지}/{like|dislike|report}/{기기} 에 1을 기록해요.
+   규칙이 "이미 있으면 못 씀"이라 기기당 한 번씩만 누를 수 있고, 좋아요와 싫어요는 둘 중 하나만 돼요.
+   신고가 REPORT_LIMIT(3)개 이상이면 "삭제된 게시물입니다."로 바뀌고 쓰레기통으로 가요. */
+const REPORT_LIMIT = 3;
+const DEVICE = (() => {
+  let d = ""; try { d = localStorage.getItem("mytree.device") || ""; } catch(_){}
+  if (!/^[a-z0-9]{8,24}$/.test(d)){
+    d = (window.crypto && crypto.randomUUID ? crypto.randomUUID().replace(/-/g, "") : Math.random().toString(36).slice(2) + Date.now().toString(36)).slice(0, 16).toLowerCase();
+    try { localStorage.setItem("mytree.device", d); } catch(_){}
+  }
+  return d;
+})();
+let reactions = {};          // { 편지id: { like: {기기:1}, dislike: {...}, report: {...} } }
+let reactionsLoaded = false;
+let deletedIds = new Set();
+const rc = (m, type) => Object.keys(((reactions[m.id] || {})[type]) || {}).length;
+const iDid = (m, type) => !!(((reactions[m.id] || {})[type] || {})[DEVICE]);
+const RM_TEXT = "삭제된 게시물입니다.";
+
+async function loadReactions(){
+  if (PREVIEW) return;
+  if (!DB){
+    try { reactions = JSON.parse(localStorage.getItem("mytree.reactions") || "{}") || {}; } catch(_){ reactions = {}; }
+    afterReactions(); return;
+  }
+  try {
+    const res = await fetch(`${DB}/reactions.json`, { cache: "no-store" });
+    if (!res.ok) return;
+    reactions = (await res.json()) || {};
+    afterReactions();
+  } catch(_){}
+}
+function afterReactions(){
+  const first = !reactionsLoaded; reactionsLoaded = true;
+  const now = new Set();
+  for (const m of msgs){
+    m._like = rc(m, "like"); m._dis = rc(m, "dislike"); m._rep = rc(m, "report");
+    m._del = m._rep >= REPORT_LIMIT;
+    if (m._del) now.add(m.id);
+  }
+  if (!first) for (const m of msgs) if (m._del && !deletedIds.has(m.id)) flyToTrash(m);
+  deletedIds = now;
+  renderTrash(); renderBest(); updateMail();
+  const cur = msgs.find(x => x.id === currentId);
+  if (cur && !$("#card").classList.contains("hidden")) renderReact(cur);
+}
+function renderReact(m){
+  const del = !!m._del, myRep = iDid(m, "report");
+  $("#card .sheet").classList.toggle("removed", del);
+  $(".tr").classList.toggle("hidden", del);
+  // 삭제된 편지는 내가 신고했던 경우에만 "신고 취소" 버튼이 남아요
+  $("#cReact").classList.toggle("hidden", del && !myRep);
+  $("#rLike").classList.toggle("hidden", del);
+  $("#rDis").classList.toggle("hidden", del);
+  if (del){
+    $("#cMsg").textContent = RM_TEXT;
+    $("#cPhotoWrap").classList.add("hidden"); $("#cPhotoWrap").innerHTML = "";
+    $("#cIcon").textContent = "🗑"; $("#cIcon").style.filter = "grayscale(1)";
+  } else if ($("#cMsg").textContent !== m.text){
+    // 신고가 취소돼서 복구된 경우: 원래 내용으로 되돌려요
+    $("#cMsg").textContent = m.text;
+    $("#cIcon").textContent = m.kind === "gift" ? "🎁" : "🔴";
+    $("#cIcon").style.filter = `drop-shadow(0 0 10px ${m.col})`;
+    if (m.p && !$("#cPhotoWrap").children.length) showCardPhoto(m);
+  }
+  $("#rLike span").textContent = m._like || 0;
+  $("#rDis span").textContent = m._dis || 0;
+  $("#rLike").classList.toggle("on", iDid(m, "like"));
+  $("#rDis").classList.toggle("on", iDid(m, "dislike"));
+  $("#rRep").classList.toggle("on", myRep);
+  const asking = reportAsk.id === m.id && t < reportAsk.until;
+  $("#rRep").classList.toggle("ask", asking && !myRep);
+  $("#rRep").textContent = myRep ? "🚩 Undo report" : asking ? "🚩 Report? tap again" : "🚩 Report";
+}
+// 내 기기의 반응을 켜거나(on) 끄고(off) Firebase에 저장. 실패하면 되돌리고 false
+async function setReaction(m, type, on){
+  const r = reactions[m.id] || (reactions[m.id] = {});
+  const bucket = r[type] || (r[type] = {});
+  if (on) bucket[DEVICE] = 1; else delete bucket[DEVICE];
+  afterReactions();
+  if (PREVIEW) return true;
+  if (!DB){ try { localStorage.setItem("mytree.reactions", JSON.stringify(reactions)); } catch(_){} return true; }
+  try {
+    const res = await fetch(`${DB}/reactions/${m.id}/${type}/${DEVICE}.json`, on ? { method: "PUT", body: "1" } : { method: "DELETE" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    return true;
+  } catch(_){
+    if (on) delete bucket[DEVICE]; else bucket[DEVICE] = 1;
+    afterReactions();
+    toast("Couldn't save your reaction. Please try again later");
+    return false;
+  }
+}
+let reportAsk = { id: "", until: 0 };
+let reacting = false;
+async function react(type, m){
+  m = m || msgs.find(x => x.id === currentId); if (!m || reacting) return;
+  if (m._del && !(type === "report" && iDid(m, "report"))) return;
+  reacting = true;
+  try {
+    // 이미 눌렀으면 → 취소
+    if (iDid(m, type)){
+      if (await setReaction(m, type, false))
+        toast(type === "like" ? "👍 Like removed" : type === "dislike" ? "👎 Dislike removed" : "🚩 Report withdrawn");
+      return;
+    }
+    if (type === "report"){
+      // 신고는 실수 방지로 3초 안에 한 번 더 눌러야 접수
+      if (!(reportAsk.id === m.id && t < reportAsk.until)){
+        reportAsk = { id: m.id, until: t + 3 };
+        toast("🚩 Tap 🚩 again to report this letter");
+        refreshReactViews(m);
+        setTimeout(() => refreshReactViews(m), 3100);
+        return;
+      }
+      reportAsk = { id: "", until: 0 };
+      if (await setReaction(m, "report", true)) toast("🚩 Reported. Tap 🚩 again anytime to undo");
+      return;
+    }
+    // 좋아요 ↔ 싫어요는 둘 중 하나: 반대쪽을 먼저 취소
+    const other = type === "like" ? "dislike" : "like";
+    if (iDid(m, other) && !(await setReaction(m, other, false))) return;
+    if (await setReaction(m, type, true)) toast(type === "like" ? "👍 Liked!" : "👎 Noted");
+  } finally { reacting = false; }
+}
+function refreshReactViews(m){
+  const cur = msgs.find(x => x.id === currentId);
+  if (cur && !$("#card").classList.contains("hidden")) renderReact(cur);
+  if (!$("#mailbox").classList.contains("hidden")) renderMailbox();
+}
+$("#rLike").onclick = () => react("like");
+$("#rDis").onclick = () => react("dislike");
+$("#rRep").onclick = () => react("report");
+
+// 목록에서 바로 누를 수 있는 작은 이모지 버튼 묶음
+function makeRx(m){
+  const box = document.createElement("span"); box.className = "rx";
+  const add = (type, label, on) => {
+    const b = document.createElement("button"); b.type = "button"; b.textContent = label;
+    if (on) b.classList.add("on");
+    if (type === "report" && reportAsk.id === m.id && t < reportAsk.until && !on) b.classList.add("ask");
+    b.title = type === "like" ? "Like" : type === "dislike" ? "Dislike" : (on ? "Undo report" : "Report");
+    b.onclick = e => { e.stopPropagation(); react(type, m); };
+    box.appendChild(b);
+  };
+  if (!m._del){
+    add("like", `👍${m._like || ""}`, iDid(m, "like"));
+    add("dislike", `👎${m._dis || ""}`, iDid(m, "dislike"));
+    add("report", "🚩", iDid(m, "report"));
+  } else if (iDid(m, "report")) add("report", "🚩 undo", true);
+  return box;
+}
+
+/* 배경에 떠다니는 베스트 편지 TOP 3 (좋아요 순) */
+let bestKey = "";
+function renderBest(){
+  const live = msgs.filter(m => !m._del && m._like > 0).sort((a, b) => b._like - a._like || b.t - a.t).slice(0, 3);
+  const key = live.map(m => m.id + ":" + m._like).join("|");
+  if (key === bestKey) return;
+  bestKey = key;
+  document.querySelectorAll(".bestFloat").forEach((el, i) => {
+    const b = live[i];
+    if (!b){ el.classList.add("hidden"); return; }
+    const txt = b.text.length > 46 ? b.text.slice(0, 45) + "…" : b.text;
+    el.querySelector(".q").textContent = `“${txt}”`;
+    el.querySelector(".m").textContent = `🏆 #${i + 1} · 👍 ${b._like} · from ${b.name || "Anonymous"} → to ${b.to || "Everyone"}`;
+    el.classList.remove("hidden");
+  });
+}
+
+/* 마을회관 보드: 좋아요 BEST / 싫어요 BEST */
+function renderBoard(){
+  const box = $("#mbBoard"); box.innerHTML = "";
+  const section = (title, key) => {
+    const h = document.createElement("h4"); h.textContent = title; box.appendChild(h);
+    const top = msgs.filter(m => m[key] > 0).sort((a, b) => b[key] - a[key] || b.t - a.t).slice(0, 3);
+    const ul = document.createElement("ul");
+    if (!top.length){ const li = document.createElement("li"); li.className = "none"; li.textContent = "Nothing here yet"; ul.appendChild(li); }
+    top.forEach((m, i) => {
+      const li = document.createElement("li"); if (m._del) li.className = "removed";
+      li.innerHTML = '<button type="button" class="main"><span class="rk"></span><span class="pv"></span></button>';
+      li.querySelector(".rk").textContent = i + 1;
+      li.querySelector(".pv").textContent = m._del ? RM_TEXT : `${m.text}  — ${m.name || "Anonymous"} → ${m.to || "Everyone"}`;
+      li.querySelector("button").onclick = () => { $("#mailbox").classList.add("hidden"); openCard(m); };
+      li.appendChild(makeRx(m));
+      ul.appendChild(li);
+    });
+    box.appendChild(ul);
+  };
+  section("🏆 Most liked", "_like");
+  section("💀 Most disliked", "_dis");
+}
+
+/* ---------------- 쓰레기통 ---------------- */
+function scramble(text, seed){
+  const r = rng(hashStr(seed));
+  const chars = [...text].filter(ch => ch.trim());
+  for (let i = chars.length - 1; i > 0; i--){ const j = (r() * (i + 1)) | 0; [chars[i], chars[j]] = [chars[j], chars[i]]; }
+  return chars.map(ch => r() < 0.35 ? "░" : ch).join(r() < 0.5 ? " " : "·");
+}
+function renderTrash(){
+  const del = msgs.filter(m => m._del);
+  $("#trashCnt").textContent = `trash · ${del.length}`;
+  const bits = del.flatMap(m => [...m.text].filter(ch => ch.trim()));
+  const r = rng(del.length * 7 + 3);
+  const pile = [];
+  for (let i = 0; i < Math.min(10, bits.length); i++) pile.push(bits[(r() * bits.length) | 0]);
+  $("#trashPile").textContent = pile.join("");
+  if (!$("#trashView").classList.contains("hidden")) renderTrashView();
+}
+function renderTrashView(){
+  const del = msgs.filter(m => m._del).sort((a, b) => b.t - a.t);
+  $("#tvLead").textContent = del.length
+    ? `${del.length} letter${del.length > 1 ? "s were" : " was"} reported ${REPORT_LIMIT}+ times and smashed into pieces. You can only see the broken bits.`
+    : "Nothing in the trash. Everyone's being nice 🎄";
+  const ul = $("#trashList"); ul.innerHTML = "";
+  for (const m of del){
+    const li = document.createElement("li");
+    li.textContent = scramble(m.text, m.id);
+    const sm = document.createElement("small"); sm.textContent = `${RM_TEXT} · 🚩 ${m._rep}`;
+    li.appendChild(sm); ul.appendChild(li);
+  }
+}
+function trashCell(){
+  const rc2 = $("#trash .bin").getBoundingClientRect();
+  return { x: (rc2.left + rc2.width / 2) / cw, y: (rc2.top + rc2.height * 0.2) / ch };
+}
+// 신고 3개가 된 편지: 글자가 부서져서 쓰레기통으로 날아가요
+function flyToTrash(m){
+  let sx = m._c, sy = m._r;
+  if (!(sx >= 0 && sy >= 0)){ proj(m.x, m.y, m.z); sx = PX / cw; sy = PY / ch; }
+  const tgt = trashCell();
+  const chars = [...m.text].filter(ch => ch.trim()).slice(0, 48);
+  if (!chars.length) chars.push("?");
+  burst(sx, sy, 16, ["#9aa0a6", "#d0d4d8"], rows * 0.06);
+  chars.forEach((chr, i) => parts.push({ fly: true, chr, sx: sx + rand(-2, 2), sy: sy + rand(-1, 1), tx: tgt.x + rand(-1.5, 1.5), ty: tgt.y,
+    x: sx, y: sy, life: -i * 0.04, max: rand(1.1, 1.6), arc: rand(0.08, 0.2) }));
+  setTimeout(() => { const t2 = $("#trash"); t2.classList.remove("gulp"); void t2.offsetWidth; t2.classList.add("gulp"); }, 1300);
+}
+// 쓰레기통을 계속 두드리면 부서지는 이스터에그
+const trashTaps = []; let trashTimer = null, trashBrokenUntil = 0;
+$("#trash").onclick = () => {
+  const now = performance.now();
+  while (trashTaps.length && now - trashTaps[0] > 3000) trashTaps.shift();
+  trashTaps.push(now);
+  const el = $("#trash"); el.classList.remove("shake"); void el.offsetWidth; el.classList.add("shake");
+  clearTimeout(trashTimer);
+  if (trashTaps.length >= 6){ trashTaps.length = 0; breakTrash(); return; }
+  trashTimer = setTimeout(() => { renderTrashView(); $("#trashView").classList.remove("hidden"); }, 400);
+};
+function breakTrash(){
+  $("#trashView").classList.add("hidden");
+  const el = $("#trash"); el.classList.add("is-broken");
+  const c = trashCell();
+  const bits = msgs.filter(m => m._del).flatMap(m => [...m.text].filter(ch => ch.trim()));
+  const src = bits.length ? bits : [..."#%@*&?!"];
+  for (let i = 0; i < 60; i++){
+    parts.push({ chr: pick(src), x: c.x, y: c.y + 2, vx: -rand(2, 16), vy: -rand(4, 14), life: 0, max: rand(3, 5.5), pal: ["#7d8288", "#b9bec4"], g: 9, front: true, spill: true });
+  }
+  egg("trash", "🗑 You smashed the trash can! Broken words spill everywhere…");
+  setTimeout(() => el.classList.remove("is-broken"), 7000);
+}
 
 /* ---------------- 저장소 ---------------- */
 const LS_KEY = "mytree.messages.v2";   // 키를 바꾸면 이전에 저장된 장식이 초기화돼요
@@ -1733,18 +2223,19 @@ function sanitize(id, m){
   if (!text) return null;
   return { id: String(id), name: String(CONFIG.RENAMED[m.name] || m.name || "Anonymous").slice(0, CONFIG.MAX_NAME), text,
     kind: m.kind === "gift" ? "gift" : "ornament",
-    color: Object.prototype.hasOwnProperty.call(COLORS, m.color) ? m.color : "red", t: Number(m.t) || 0,
+    color: Object.prototype.hasOwnProperty.call(COLORS, m.color) ? m.color : "red", t: Number(m.t) || 0, p: m.p === true,
     to: String(CONFIG.RENAMED[m.to] || m.to || "").slice(0, CONFIG.MAX_NAME) };   // 받는이는 지우지 않고 그대로 보존
 }
-function saveLocal(){ try { localStorage.setItem(LS_KEY, JSON.stringify(msgs.map(({id, name, text, kind, color, t, to}) => ({id, name, text, kind, color, t, to})))); } catch(_){} }
+function saveLocal(){ try { localStorage.setItem(LS_KEY, JSON.stringify(msgs.map(({id, name, text, kind, color, t, to, p, photo}) => ({id, name, text, kind, color, t, to, p, photo})))); } catch(_){ toast("This browser is out of space for more photos"); } }
 function loadLocal(){
-  try { msgs = JSON.parse(localStorage.getItem(LS_KEY) || "[]").map(m => sanitize(m.id, m)).filter(Boolean).map(prepare); }
+  try { msgs = JSON.parse(localStorage.getItem(LS_KEY) || "[]").map(m => { const x = sanitize(m.id, m); if (x && typeof m.photo === "string" && m.photo.startsWith("data:image/")) x.photo = m.photo; return x; }).filter(Boolean).map(prepare); }
   catch(_){ msgs = []; }
 }
 let remoteLoaded = false, lastKey = "";
 async function loadRemote(){
   if (remoteLoaded && document.hidden) return;   // 탭이 안 보일 땐 쉬기 (무료 한도 아끼기)
   loadEggs();
+  loadReactions();
   try {
     // 처음엔 최근 400개, 그 뒤엔 마지막으로 본 것 이후의 새 메시지만 받아와요
     const q = remoteLoaded && lastKey
@@ -1770,15 +2261,27 @@ function makePreview(n){
   msgs = Array.from({ length: n }, (_, i) => prepare({ id: "p" + i, name: "friend" + (i + 1), text: words[i % words.length],
     kind: i % 3 === 2 ? "gift" : "ornament", color: keys[i % keys.length], t: Date.now() - (n - i) * 60000,
     to: i % 4 === 0 ? "" : CONFIG.MEMBERS[i % CONFIG.MEMBERS.length] }));
+  // 미리보기용 가짜 반응 (몇 개는 좋아요, 하나는 신고 3개로 쓰레기통행)
+  reactions = {};
+  msgs.forEach((m, i) => {
+    const r = reactions[m.id] = { like: {}, dislike: {}, report: {} };
+    for (let k = 0; k < (i * 7) % 6; k++) r.like["dev" + k] = 1;
+    for (let k = 0; k < (i * 5) % 4; k++) r.dislike["dvx" + k] = 1;
+    if (i === 3) for (let k = 0; k < 3; k++) r.report["rp" + k] = 1;
+  });
+  reactionsLoaded = true;
 }
-function onMsgsChanged(initial){ rebuildTextSrc(); updateLevel(initial); updateHud(); renderGuide(); updateMail(); }
+function onMsgsChanged(initial){
+  for (const m of msgs){ m._like = rc(m, "like"); m._dis = rc(m, "dislike"); m._rep = rc(m, "report"); m._del = m._rep >= REPORT_LIMIT; if (m._del) deletedIds.add(m.id); }
+  rebuildTextSrc(); updateLevel(initial); updateHud(); renderGuide(); updateMail(); renderTrash(); renderBest();
+}
 
 /* ---------------- 시작 ---------------- */
 let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(resize, 120); });
 resize();
 if (PREVIEW){ makePreview(PREVIEW); onMsgsChanged(true); }
 else if (DB){ onMsgsChanged(true); loadRemote(); setInterval(loadRemote, CONFIG.POLL_SEC * 1000); document.addEventListener("visibilitychange", () => { if (!document.hidden) loadRemote(); }); }
-else { loadLocal(); onMsgsChanged(true); }
+else { loadLocal(); onMsgsChanged(true); loadReactions(); }
 setInterval(updateHud, 250);
 requestAnimationFrame(frame);
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(resize);
