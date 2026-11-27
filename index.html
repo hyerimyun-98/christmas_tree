@@ -648,7 +648,8 @@
 const CONFIG = {
   FIREBASE_DB_URL: "https://christmas-tree-734db-default-rtdb.asia-southeast1.firebasedatabase.app",
   GREET: "MERRY CHRISTMAS 2026",
-  STAR_TEXT: "AIRIS LAB",   // 레벨 10에서 트리 꼭대기 별이 이 글자로 바뀌어요 (영문 대문자/공백)
+  STAR_TEXT: "AIRIS LAB",   // (지금은 안 써요) STAR_LOGO를 true로 하면 레벨 10에서 꼭대기 별이 이 글자로 바뀌어요
+  STAR_LOGO: false,         // false = 꼭대기는 항상 별
   SPIN: 0.35,
   // 연구실 멤버 (편지 보내는이/받는이 목록)
   MEMBERS: ["강은", "상은", "Vika", "Akira", "부승", "종호", "정빈", "경택", "Rai", "성준", "기락", "교수님", "이든", "혜림", "린지"],
@@ -682,7 +683,7 @@ const LEVELS = [
   { icon:"🦆", text:"A GIANT rubber duck appears?!" },
   { icon:"🛸", text:"A spaceship passes by… aliens love Christmas too?" },
   { icon:"👻", text:"A ghost in a Santa hat stops by to say hi" },
-  { icon:"⭐", text:`The ${CONFIG.STAR_TEXT} star! Golden garland & fireworks` },
+  { icon:"⭐", text:"Golden garland & fireworks light up the tree" },
   { icon:"🚂", text:"A toy train chugs past the tree" },
   { icon:"🏙", text:"City lights twinkle on the horizon" },
   { icon:"🏮", text:"Sky lanterns float up into the night" },
@@ -1816,10 +1817,10 @@ function frame(now){
     if (ghost.phase === "wave") bubbles.push({ x: (ghost.x + 5) * cw, y: (gy - 1) * ch, text: "Merry Christmas~! 👋", until: t + 0.05 });
   }
 
-  // 별 (레벨 10에서는 로고)
+  // 별 (STAR_LOGO를 켜면 레벨 10부터 로고)
   proj(0, -0.01, 0);
   starHit = { x: PX, y: PY, r: Math.max(26, 5 * cw) };
-  if (LEVEL >= 10){
+  if (CONFIG.STAR_LOGO && LEVEL >= 10){
     const sx = cols >= LOGO[0].length * 2 + 60 ? 2 : 1, w = LOGO[0].length * sx;
     const c0 = ((PX / cw) | 0) - (w >> 1), r0 = ((PY / ch) | 0) - 3;
     for (let sr = 0; sr < 5; sr++) for (let sc = 0; sc < w; sc++){
