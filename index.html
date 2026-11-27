@@ -8,6 +8,14 @@
 <meta property="og:title" content="my.tree — decorate a code-drawn Christmas tree 🎄">
 <meta property="og:description" content="Leave a message and it becomes an ornament or a gift on the tree. Every 10 decorations unlock a new surprise!">
 <meta name="theme-color" content="#05070d">
+<!-- 홈 화면 앱 (PWA) -->
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="AIRIS Tree">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Nanum+Gothic+Coding:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
@@ -61,8 +69,20 @@
   .overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:20;padding:16px;
     backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
   .hidden{display:none!important}
+  #labTitle{position:fixed;left:0;right:0;top:0;text-align:center;pointer-events:none;z-index:3;
+    font:700 11px var(--code);letter-spacing:.32em;color:#b98cff;text-shadow:0 0 6px rgba(170,110,255,.75),0 0 16px rgba(140,80,255,.45);white-space:nowrap}
+  @media (max-width: 600px){ #labTitle{font-size:9px;letter-spacing:.24em} }
+  #notifyView .sheet{max-width:380px}
+  #notifyView p{margin:0 0 10px;color:#bfe;font-size:13.5px;line-height:1.55}
+  #notifyView select{width:100%;margin:4px 0 12px}
+  #notifyView .row{display:flex;gap:8px;flex-wrap:wrap}
+  #notifyView .row button{flex:1;min-width:120px;padding:10px 12px;border-radius:10px;border:0;font-weight:800;cursor:pointer;background:#9dffb0;color:#06210f}
+  #notifyView .row button.ghost{background:none;border:1px solid rgba(160,255,190,.35);color:#cfe}
+  #nfStatus{font:12px var(--mono);color:#e9c45a;margin:10px 0 0;min-height:1em}
+  #nfInstall{margin-top:14px;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.05);font-size:12.5px;line-height:1.6;color:#aac}
+  #nfInstall b{color:#e8fff0}
   /* 곰이 쿵쿵 걸을 때 화면이 같이 흔들려요 (기존 transform과 따로 움직이는 translate 속성 사용) */
-  #c, #street, #tunnel, #trash, #greet, #hud, #btnAdd, .bestFloat{translate:var(--qx,0px) var(--qy,0px)}
+  #c, #street, #tunnel, #trash, #greet, #hud, #btnAdd, .bestFloat, #labTitle{translate:var(--qx,0px) var(--qy,0px)}
   canvas.grabItem{cursor:grabbing!important}
   #eggName{z-index:40}
   #eggName .sheet{max-width:340px;text-align:center}
@@ -236,10 +256,26 @@
   .hut.hall .rf{color:#c9a06a}
   .hut.hall .nm{color:#9dffb0}
   @keyframes hutGlow{0%,100%{filter:drop-shadow(0 0 0 rgba(255,220,100,0))}50%{filter:drop-shadow(0 0 7px rgba(255,220,100,.55))}}
+  .hut .nm .short{display:none}
+  /* 휴대폰: 집을 작게 두 줄로 (옆으로 밀지 않아도 다 보이게), 쓰레기통은 아랫줄 끝(린지 집 옆) */
   @media (max-width: 600px){
-    :root{--street: 104px}
-    .hut{font-size:8px} .hut .nm{font-size:10px}
-    #street{padding-right:70px;-webkit-mask-image:linear-gradient(to right, transparent 0, #000 14px, #000 calc(100% - 96px), transparent calc(100% - 66px));mask-image:linear-gradient(to right, transparent 0, #000 14px, #000 calc(100% - 96px), transparent calc(100% - 66px))}
+    :root{--street: 196px}
+    #street{overflow:hidden;padding:16px 70px calc(6px + env(safe-area-inset-bottom)) 6px}
+    #street .inner{display:grid;grid-template-columns:repeat(9, minmax(0, 1fr));grid-template-rows:1fr 1fr;row-gap:16px;width:100%;margin:0;padding-bottom:0}
+    #street .inner::after{display:none}
+    #street .inner::before{content:"";position:absolute;left:-6px;right:-70px;top:calc(50% + 1px);height:10px;margin-top:-5px;
+      border-top:1px dashed rgba(190,140,92,.55);border-bottom:1px dashed rgba(190,140,92,.55);
+      background:repeating-linear-gradient(90deg, rgba(255,214,140,.13) 0 2px, transparent 2px 14px), rgba(46,29,16,.88);
+      background-size:14px 100%, auto;animation:tunnelFlow 1.6s linear infinite}
+    /* 위 땅굴과 가운데 땅굴을 잇는 오른쪽 세로 통로 */
+    #tunnel::after{content:"";position:absolute;right:7px;top:100%;width:8px;height:84px;
+      border-left:1px dashed rgba(190,140,92,.55);border-right:1px dashed rgba(190,140,92,.55);background:rgba(46,29,16,.88)}
+    .hut{font-size:6.2px;padding:0 0 2px;margin:0!important;min-width:0}
+    .hut pre{overflow:hidden;max-width:100%}
+    .hut .nm{font-size:8px;letter-spacing:-.3px;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+    .hut .nm .long{display:none} .hut .nm .short{display:inline}
+    .hut.has::after{font-size:9px;top:-4px}
+    .hut.sign pre{font-size:5.2px}
     #trash{font-size:8.5px} #trash .pile{font-size:8px;max-width:60px}
   }
   .photoRow{display:flex;align-items:center;gap:10px}
@@ -385,11 +421,13 @@
 <canvas id="c" aria-label="Spinning ASCII Christmas tree"></canvas>
 
 <div id="hud"></div>
+<div id="labTitle">AIRIS LAB CHRISTMAS TREE</div>
 <div id="topbar">
   <button class="chip" id="btnMusic">🔇 Play music</button>
   <button class="chip" id="btnFill">FILL: symbol</button>
   <button class="chip" id="btnRandom">🎁 Open a random one</button>
   <button class="chip" id="btnGuide">📜 Guide</button>
+  <button class="chip" id="btnNotify">🔔 Alerts</button>
 </div>
 
 <div id="globeFx" aria-hidden="true"></div>
@@ -518,6 +556,24 @@
   '-/ \-'</pre>
   <span class="cnt" id="trashCnt">trash · 0</span>
 </button>
+<div class="overlay hidden" id="notifyView">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="nfTitle">
+    <div class="sheetHead"><span>// mailbox.notify()</span><button data-close aria-label="Close">✕</button></div>
+    <div class="sheetBody">
+      <h2 id="nfTitle">📬 Letter alerts</h2>
+      <p>Pick your mailbox. When a new letter arrives for you, you'll get an alert and a number on the app icon.</p>
+      <label for="nfMe">I am…</label>
+      <select id="nfMe"></select>
+      <div class="row">
+        <button type="button" id="nfOn">🔔 Turn on alerts</button>
+        <button type="button" id="nfOff" class="ghost">Turn off</button>
+      </div>
+      <div id="nfStatus"></div>
+      <div id="nfInstall"></div>
+    </div>
+  </div>
+</div>
+
 <div class="overlay hidden" id="eggName">
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="enTitle">
     <div class="sheetHead"><span>// first_finder.sign()</span><button data-close aria-label="Close">✕</button></div>
@@ -796,6 +852,7 @@ function resize(){
   depth = new Float32Array(NCELL); chars = new Array(NCELL); colors = new Array(NCELL);
   owner = new Int32Array(NCELL); glow = new Uint8Array(NCELL);
   groundRow = Math.round((cy + (GIFT_Y - 0.55) * COST * scale) / ch) + 1;
+  { const lt = document.getElementById("labTitle"); if (lt) lt.style.top = ((groundRow + 1.6) * ch) + "px"; }   // 트리 밑 땅선 바로 아래
 
   const r = rng(7);
   bgStars = [];
@@ -1221,9 +1278,19 @@ async function letterRoute(m, sx, sy){
     hut = document.querySelector(sel);
     const hr = hut ? hut.getBoundingClientRect() : { left: W / 2, width: 0, top: H - 60 };
     const hx = hr.left + hr.width / 2;
-    await go([cp.x, ty], [hx, ty], Math.max(500, Math.min(1900, Math.abs(hx - cp.x) * 2.4)), "ease-in-out");   // 길 따라 슝
     const pre = hut && hut.querySelector("pre"), roof = pre ? pre.getBoundingClientRect().top + 4 : hr.top + 20;
-    await go([hx, ty], [hx, roof], 420, "ease-in");                                       // 집으로 쏙
+    const inner = $("#streetInner").getBoundingClientRect(), midY = inner.top + inner.height / 2 + 1;
+    if (W <= 600 && roof > midY){
+      // 휴대폰 아랫줄 집: 위 땅굴 → 오른쪽 세로 통로 → 가운데 땅굴 → 집
+      const sx2 = W - 11;
+      await go([cp.x, ty], [sx2, ty], Math.max(300, Math.abs(sx2 - cp.x) * 2.4), "ease-in-out");
+      await go([sx2, ty], [sx2, midY], 520, "ease-in");
+      await go([sx2, midY], [hx, midY], Math.max(500, Math.min(1900, Math.abs(hx - sx2) * 2.4)), "ease-in-out");
+      await go([hx, midY], [hx, roof], 380, "ease-in");
+    } else {
+      await go([cp.x, ty], [hx, ty], Math.max(500, Math.min(1900, Math.abs(hx - cp.x) * 2.4)), "ease-in-out");   // 길 따라 슝
+      await go([hx, ty], [hx, roof], 420, "ease-in");                                       // 집으로 쏙
+    }
   } catch(_){}
   el.remove();
   m._transit = false; renderStreet();
@@ -2384,7 +2451,7 @@ $("#btnFill").onclick = () => { FILL = { symbol: "text", text: "binary", binary:
 
 /* ---------------- 뒤로가기: 열린 화면을 차례로 쌓아요 ----------------
    메일함 → 편지 순서로 열면 "← Back"(또는 휴대폰 뒤로가기)으로 메일함으로 돌아가요. */
-const OV_IDS = ["mailbox", "card", "trashView", "bestView"];
+const OV_IDS = ["mailbox", "card", "trashView", "bestView", "notifyView"];
 const ovStack = [];
 try { if (history.state && history.state.ov) history.replaceState(null, ""); } catch(_){}
 function showOv(id){
@@ -2425,7 +2492,7 @@ function readSet(){ try { return new Set(JSON.parse(localStorage.getItem("mytree
 function markRead(id){
   const r = readSet(); if (r.has(id)) return;
   r.add(id); try { localStorage.setItem("mytree.read", JSON.stringify([...r])); } catch(_){}
-  updateMail();
+  updateMail(); updateBadge();
 }
 let unreadIds = new Set();
 const EVERYONE = "*";   // 모두에게 온 편지 게시판
@@ -2518,7 +2585,9 @@ function renderStreet(){
       sp.textContent = txt;
       pre.appendChild(sp);
     }
-    const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = name === EVERYONE ? "🎄 Everyone" : name;
+    const nm = document.createElement("span"); nm.className = "nm";
+    if (name === EVERYONE) nm.innerHTML = '🎄 <span class="long">Everyone</span><span class="short">All</span>';   // 휴대폰에선 짧게
+    else nm.textContent = name;
     const pipe = document.createElement("span"); pipe.className = "pipe";   // 땅굴과 집을 잇는 통로
     b.dataset.name = name;
     b.appendChild(pipe); b.appendChild(pre); b.appendChild(nm);
@@ -3414,10 +3483,12 @@ function loadLocal(){
 }
 let remoteLoaded = false, lastKey = "";
 async function loadRemote(){
-  if (remoteLoaded && document.hidden) return;   // 탭이 안 보일 땐 쉬기 (무료 한도 아끼기)
-  loadEggs();
-  loadReactions();
-  loadMods();
+  if (remoteLoaded && document.hidden && !alertsOn()) return;   // 탭이 안 보일 땐 쉬기 (무료 한도 아끼기) — 알림을 켰으면 새 편지만 계속 확인
+  if (!(remoteLoaded && document.hidden)){
+    loadEggs();
+    loadReactions();
+    loadMods();
+  }
   try {
     // 처음엔 최근 400개, 그 뒤엔 마지막으로 본 것 이후의 새 메시지만 받아와요
     const q = remoteLoaded && lastKey
@@ -3427,14 +3498,16 @@ async function loadRemote(){
     if (!res.ok) throw new Error("HTTP " + res.status);
     const data = (await res.json()) || {};
     const known = new Set(msgs.map(m => m.id));
-    let added = 0;
+    let added = 0; const fresh = [];
     for (const [id, v] of Object.entries(data)){
       if (id > lastKey) lastKey = id;
       if (known.has(id)) continue;
-      const m = sanitize(id, v); if (m){ msgs.push(prepare(m)); added++; }
+      const m = sanitize(id, v); if (m){ msgs.push(prepare(m)); added++; fresh.push(m); }
     }
     const first = !remoteLoaded; remoteLoaded = true;
     if (first || added){ msgs.sort((a, b) => a.t - b.t); onMsgsChanged(first); }
+    if (first){ welcomeBack(); tryPendingOpen(); }
+    else alertNew(fresh);
   } catch (err){ console.warn("Failed to load messages", err); }
 }
 function makePreview(n){
@@ -3456,7 +3529,94 @@ function onMsgsChanged(initial){
   applyMods();
   for (const m of msgs){ m._like = rc(m, "like"); m._dis = rc(m, "dislike"); m._rep = rc(m, "report"); m._del = m._rep >= REPORT_LIMIT; if (m._del) deletedIds.add(m.id); }
   rebuildTextSrc(); updateLevel(initial); updateHud(); renderGuide(); updateMail(); renderTrash(); renderBest();
+  updateBadge();
 }
+
+/* ---------------- 홈 화면 앱 + 편지 알림 ----------------
+   - 앱(사이트)이 열려 있는 동안 새 편지를 확인하다가, 내 집으로 온 편지가 있으면 알려줘요.
+     화면을 보고 있으면 화면 안 알림, 다른 창·탭에 가 있으면 휴대폰/컴퓨터 알림으로.
+   - 앱을 완전히 닫으면 알림은 오지 않아요(서버 푸시 없음). 대신 다음에 열 때 "새 편지 N통"을 알려주고 아이콘에 숫자를 붙여요. */
+const ME_KEY = "mytree.me", ALERT_KEY = "mytree.alerts", VISIT_KEY = "mytree.lastVisit";
+const myName = () => { try { const n = localStorage.getItem(ME_KEY) || ""; return CONFIG.MEMBERS.includes(n) ? n : ""; } catch(_){ return ""; } };
+const alertsOn = () => { try { return localStorage.getItem(ALERT_KEY) === "1" && !!myName(); } catch(_){ return false; } };
+const isStandalone = () => (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || navigator.standalone === true;
+const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+let swReg = null, pendingOpen = new URLSearchParams(location.search).get("open");
+if ("serviceWorker" in navigator && window.isSecureContext && location.protocol !== "file:"){
+  navigator.serviceWorker.register("sw.js").then(r => { swReg = r; }).catch(err => console.warn("SW", err));
+  navigator.serviceWorker.addEventListener("message", e => { if (e.data && e.data.open){ pendingOpen = e.data.open; tryPendingOpen(); } });
+}
+function tryPendingOpen(){
+  if (!pendingOpen) return;
+  const m = msgs.find(x => x.id === pendingOpen);
+  if (m){ pendingOpen = null; closeAllOv(); setTimeout(() => openCard(m), 120); }
+}
+function myUnread(){
+  const me = myName(); if (!me) return 0;
+  const r = readSet();
+  return lettersFor(me).filter(m => !m._del && !m._transit && !r.has(m.id)).length;
+}
+function updateBadge(){
+  const n = myUnread();
+  try {
+    if (n && navigator.setAppBadge) navigator.setAppBadge(n).catch(() => {});
+    else if (!n && navigator.clearAppBadge) navigator.clearAppBadge().catch(() => {});
+  } catch(_){}
+  const b = $("#btnNotify"); if (b) b.textContent = (alertsOn() ? "🔔" : "🔕") + " Alerts" + (n ? ` · ${n} new` : "");
+}
+async function showAlert(m){
+  const title = `📬 New letter from ${m.name || "someone"}`, body = m.text || "📷 A photo letter";
+  if (!document.hidden && document.hasFocus()){ toast(`${title} — tap your house to read it`, 3400); return; }   // 보고 있으면 화면 안에서
+  if (!("Notification" in window) || Notification.permission !== "granted") return;
+  const opt = { body, tag: m.id, icon: "icon-192.png", badge: "icon-192.png", data: { id: m.id } };
+  try {
+    const reg = swReg || (navigator.serviceWorker && await navigator.serviceWorker.getRegistration());
+    if (reg && reg.showNotification) await reg.showNotification(title, opt);
+    else { const n = new Notification(title, opt); n.onclick = () => { focus(); pendingOpen = m.id; tryPendingOpen(); n.close(); }; }
+  } catch(_){}
+}
+// 새로 받아온 편지 중 나한테 온 것만 알림
+function alertNew(newMsgs){
+  if (!alertsOn() || !newMsgs.length) return;
+  const me = myName();
+  for (const m of newMsgs) if (m.to === me && m.dev !== DEVICE && !m._del) showAlert(m);
+}
+// 앱을 열었을 때: 지난번 이후 나한테 온 새 편지 수
+function welcomeBack(){
+  const me = myName(); if (!me) return;
+  let last = 0; try { last = +localStorage.getItem(VISIT_KEY) || 0; } catch(_){}
+  const r = readSet();
+  const fresh = lettersFor(me).filter(m => m.t > last && !r.has(m.id) && m.dev !== DEVICE && !m._del).length;
+  if (last && fresh) setTimeout(() => toast(`📬 ${fresh} new letter${fresh > 1 ? "s" : ""} for you, ${me}!`, 3800), 1400);
+}
+function saveVisit(){ try { localStorage.setItem(VISIT_KEY, String(Date.now())); } catch(_){} }
+addEventListener("pagehide", saveVisit);
+document.addEventListener("visibilitychange", () => { if (document.hidden) saveVisit(); else { updateBadge(); } });
+function renderNotify(){
+  const sel = $("#nfMe"), me = myName();
+  sel.innerHTML = `<option value="">— choose —</option>` + CONFIG.MEMBERS.map(n => `<option>${n.replace(/[<&]/g, "")}</option>`).join("");
+  sel.value = me;
+  const st = $("#nfStatus"), supported = "Notification" in window;
+  if (alertsOn() && supported && Notification.permission === "granted") st.textContent = `✅ Alerts are on for ${me}'s mailbox.`;
+  else if (alertsOn()) st.textContent = `✅ In-app alerts are on for ${me}. (System alerts aren't allowed on this device.)`;
+  else st.textContent = "Alerts are off.";
+  const ins = $("#nfInstall");
+  if (isStandalone()) ins.innerHTML = "📱 You're using the app. Alerts arrive while the app is open or in the background for a bit. If you fully close it, you'll see what's new next time you open it.";
+  else if (isIOS()) ins.innerHTML = "📱 <b>Install on iPhone:</b> open this page in <b>Safari</b> → tap <b>Share</b> → <b>Add to Home Screen</b>, then open it from the icon. Phone alerts only work in the installed app.";
+  else ins.innerHTML = "📱 <b>Install as an app:</b> in Chrome, open the menu (⋮) → <b>Install app</b> / <b>Add to Home screen</b>. On a computer, look for the install icon in the address bar.";
+}
+$("#btnNotify").onclick = () => { renderNotify(); pushOv("notifyView"); };
+$("#nfOn").onclick = async () => {
+  const me = $("#nfMe").value;
+  if (!CONFIG.MEMBERS.includes(me)){ $("#nfStatus").textContent = "Pick your name first 🙂"; return; }
+  try { localStorage.setItem(ME_KEY, me); localStorage.setItem(ALERT_KEY, "1"); } catch(_){}
+  if ("Notification" in window && Notification.permission === "default"){
+    try { await Notification.requestPermission(); } catch(_){}
+  }
+  renderNotify(); updateBadge();
+  if ("Notification" in window && Notification.permission === "denied") $("#nfStatus").textContent = `⚠️ Alerts are blocked in this browser's settings. You'll still see in-app alerts for ${me}.`;
+};
+$("#nfOff").onclick = () => { try { localStorage.setItem(ALERT_KEY, "0"); } catch(_){} renderNotify(); updateBadge(); };
 
 /* ---------------- 시작 ---------------- */
 let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(resize, 120); });
