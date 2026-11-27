@@ -262,6 +262,11 @@
   .hut.sign .nm{color:#ffe680}
   #bvBoard{margin-top:6px;max-height:56vh;overflow:auto}
   #bvBoard .rk{width:26px;text-align:center}
+  #rvBoard{margin-top:6px;max-height:56vh;overflow:auto}
+  #rvBoard .rk{width:auto;min-width:44px;font:600 11px var(--code);color:#9dffb0;text-align:left}
+  #rvBoard .rk.nw{color:#ffe680}
+  .hut.sign.recent .wn{color:#9dffb0;text-shadow:0 0 6px rgba(120,255,170,.6)}
+  .hut.sign.recent .nm{color:#9dffb0}
   /* 집 업그레이드 색 */
   .hut .sm{color:rgba(200,210,225,.55)}
   .hut .sn{color:#f4f8ff}
@@ -364,7 +369,7 @@
   #trash{position:fixed;right:6px;bottom:calc(4px + env(safe-area-inset-bottom));z-index:6;background:none;border:0;padding:0;cursor:pointer;
     color:#7f8a85;font:10px/1.1 var(--code);text-align:center;-webkit-tap-highlight-color:transparent}
   #trash pre{margin:0;font:inherit;white-space:pre}
-  #trash .pile{color:#9aa39e;min-height:1.1em;font-size:9px;letter-spacing:.05em;max-width:72px;overflow:hidden;margin:0 auto}
+  #trash .pile{display:none!important}   /* 쓰레기통 위 글자 더미는 숨겨요 */
   #trash .cnt{display:block;font-size:10px;color:#9aa39e;margin-top:2px}
   #trash .broken{display:none;color:#a7a7a7}
   #trash.is-broken .bin{display:none}
@@ -450,7 +455,6 @@
 <div id="labTitle">AIRIS LAB CHRISTMAS TREE</div>
 <div id="topbar">
   <button class="chip" id="btnMusic">🔇 Play music</button>
-  <button class="chip" id="btnFill">FILL: symbol</button>
   <button class="chip" id="btnRandom">🎁 Open a random one</button>
   <button class="chip" id="btnGuide">📜 Guide</button>
   <button class="chip" id="btnNotify">🔔 Alerts</button>
@@ -563,6 +567,17 @@
       <h2 id="bvTitle">🏆 Best letters</h2>
       <p class="lead">The most liked letters on the tree. Tap one to read it, or 👍 it right here.</p>
       <div class="board" id="bvBoard"></div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay hidden" id="recentView">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="rvTitle">
+    <div class="sheetHead"><span>// recent.log</span><button data-close aria-label="Close">✕</button></div>
+    <div class="sheetBody">
+      <h2 id="rvTitle">🆕 Recent letters</h2>
+      <p class="lead">The latest letters hung on the tree, newest first. Tap one to read it — <b>Next ›</b> keeps going down the list.</p>
+      <div class="board" id="rvBoard"></div>
     </div>
   </div>
 </div>
@@ -880,7 +895,7 @@ function resize(){
   const avail = Math.max(180, bottomY - topY);
   scale = Math.min(avail / 1.66, W / 1.2);
   cx = W / 2;
-  cy = topY + Math.max(0, (avail - scale * 1.66) * 0.45) + (0.55 + 0.22) * COST * scale;
+  cy = topY + Math.max(0, (avail - scale * 1.66) * (W <= 600 ? 0.72 : 0.45)) + (0.55 + 0.22) * COST * scale + (W <= 600 ? 18 : 0);   // 휴대폰은 트리를 조금 아래로
 
   fs = Math.max(7, Math.min(14, Math.round(scale * 0.94 / 44 / 1.12)));
   ctx.font = `${fs}px "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace`;
@@ -2097,8 +2112,10 @@ function updateHud(){
   const deg = ((angle * 180 / Math.PI) % 360 + 360) % 360;
   const orn = msgs.filter(onTree).length, gifts = msgs.filter(m => m.kind === "gift").length, globes = msgs.length - orn - gifts;
   const nextN = CONFIG.PER_LEVEL - (msgs.length % CONFIG.PER_LEVEL);
+  const midnight = new Date(); midnight.setHours(0, 0, 0, 0);   // 오늘(내 기기 시간 기준 0시부터) 달린 편지 수
+  const todayN = msgs.filter(m => !m._del && m.t >= midnight.getTime()).length;
   $("#hud").innerHTML =
-    `<span class="t">@my.tree</span>\n<span class="hs">rotation  ${deg.toFixed(2)}°\nlights    ${LIGHT_COUNT}\nletters   ${lettersDrawn.toLocaleString()}\nwishes    ${msgs.length}  (🔴${orn} 🎁${gifts} 🔮${globes})\n` +
+    `<span class="t">@my.tree</span>\n<span class="hs">rotation  ${deg.toFixed(2)}°\nlights    ${LIGHT_COUNT}\nletters   ${lettersDrawn.toLocaleString()}\nwishes    ${msgs.length}  (🔴${orn} 🎁${gifts} 🔮${globes})\ntoday     ${todayN}\n` +
     `<span class="lv">level     ${LEVEL}/${MAX_LEVEL}${LEVEL >= MAX_LEVEL ? " MAX" : ""}\nnext 🎉   +${nextN}\neggs 🥚   ${eggs.size}/${EGG_TOTAL}</span></span>`;
 }
 
@@ -2524,16 +2541,17 @@ function openNextCard(){
   openCard(msgs.find(y => y.id === nextId));
 }
 $("#cSeq").onclick = openNextCard;
-$("#btnFill").onclick = () => { FILL = { symbol: "text", text: "binary", binary: "symbol" }[FILL]; $("#btnFill").textContent = "FILL: " + FILL; };
+
 
 /* ---------------- 뒤로가기: 열린 화면을 차례로 쌓아요 ----------------
    메일함 → 편지 순서로 열면 "← Back"(또는 휴대폰 뒤로가기)으로 메일함으로 돌아가요. */
-const OV_IDS = ["mailbox", "card", "trashView", "bestView", "notifyView"];
+const OV_IDS = ["mailbox", "card", "trashView", "bestView", "notifyView", "recentView"];
 const ovStack = [];
 try { if (history.state && history.state.ov) history.replaceState(null, ""); } catch(_){}
 function showOv(id){
   if (id === "mailbox") renderMailbox();
   if (id === "bestView") renderBoard();
+  if (id === "recentView") renderRecent();
   $("#" + id).classList.remove("hidden");
   updateBackBtn();
 }
@@ -2663,6 +2681,18 @@ function renderStreet(){
     const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = "🏆 Best";
     b.appendChild(pre); b.appendChild(nm);
     b.onclick = () => pushOv("bestView");
+    box.appendChild(b);
+  }
+  {   // 최근 편지 게시판: 지난 24시간 동안 온 편지 수
+    const day = msgs.filter(m => !m._del && !m._transit && Date.now() - m.t < 864e5).length;
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "hut sign recent" + (day ? " full" : "");
+    b.title = "Recent letters";
+    const pre = document.createElement("pre");
+    for (const [cls, txt] of recentArt(day)){ const sp = document.createElement("span"); sp.className = cls; sp.textContent = txt; pre.appendChild(sp); }
+    const nm = document.createElement("span"); nm.className = "nm"; nm.innerHTML = '🆕 <span class="long">Recent</span><span class="short">New</span>';
+    b.appendChild(pre); b.appendChild(nm);
+    b.onclick = () => pushOv("recentView");
     box.appendChild(b);
   }
   for (const name of [EVERYONE, ...CONFIG.MEMBERS]){
@@ -3304,6 +3334,7 @@ function refreshReactViews(m){
   if (cur && !$("#card").classList.contains("hidden")) renderReact(cur);
   if (!$("#mailbox").classList.contains("hidden")) renderMailbox();
   if (!$("#bestView").classList.contains("hidden")) renderBoard();
+  if (!$("#recentView").classList.contains("hidden")) renderRecent();
 }
 $("#cBack").onclick = backOv;
 $("#rLike").onclick = () => react("like");
@@ -3499,6 +3530,45 @@ function renderBoard(){
     li.appendChild(makeRx(m));
     ul.appendChild(li);
   });
+  box.appendChild(ul);
+}
+function recentArt(day){
+  const n = String(Math.min(day, 999)).padStart(3, " ");
+  return [
+    ["st", " ._________.\n"],
+    ["rf", " | "], ["wn", "N E W !"], ["rf", " |\n"],
+    ["rf", " | "], ["li", "+"], ["bd", n], ["li", " ✉ "], ["rf", "|\n"],
+    ["rf", " |_________|\n"],
+    ["bd", "     | |    \n"],
+    ["bd", "  ___|_|___ "],
+  ];
+}
+/* 최근 편지 게시판 (최신 30통) */
+const RECENT_SIZE = 30;
+function ago(ts){
+  const s = Math.max(0, (Date.now() - ts) / 1000);
+  if (s < 60) return "just now";
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+  return `${Math.floor(s / 86400)}d ago`;
+}
+function renderRecent(){
+  const box = $("#rvBoard"); if (!box) return;
+  box.innerHTML = "";
+  const r = readSet();
+  const list = msgs.filter(m => !m._del && !m._transit).sort((a, b) => b.t - a.t).slice(0, RECENT_SIZE);
+  const ul = document.createElement("ul");
+  if (!list.length){ const li = document.createElement("li"); li.className = "none"; li.textContent = "No letters yet — hang the first one! 🎄"; ul.appendChild(li); }
+  for (const m of list){
+    const li = document.createElement("li");
+    li.innerHTML = '<button type="button" class="main"><span class="rk"></span><span class="pv"></span></button>';
+    const rk = li.querySelector(".rk"), isNew = !r.has(m.id);
+    rk.textContent = (isNew ? "NEW " : "") + ago(m.t); rk.classList.toggle("nw", isNew);
+    li.querySelector(".pv").textContent = `${KIND_ICON[kindOf(m.kind)]} ${label(m)}  — ${m.name || "Anonymous"} → ${m.to || "Everyone"}`;
+    li.querySelector("button").onclick = () => openCard(m, list.map(x => x.id));
+    li.appendChild(makeRx(m));
+    ul.appendChild(li);
+  }
   box.appendChild(ul);
 }
 function boardArt(topLikes){
