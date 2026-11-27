@@ -2575,9 +2575,9 @@ function closeAllOv(){ if (ovStack.length) history.go(-ovStack.length); }
 function updateBackBtn(){
   const b = $("#cBack"); if (!b) return;
   const under = ovStack[ovStack.length - 2];
-  const show = ovStack[ovStack.length - 1] === "card" && (under === "mailbox" || under === "bestView");
+  const show = ovStack[ovStack.length - 1] === "card" && (under === "mailbox" || under === "bestView" || under === "recentView");
   b.classList.toggle("hidden", !show);
-  if (show) b.textContent = under === "bestView" ? "← Best" : mbView === EVERYONE ? "← Everyone" : `← ${mbView}`;
+  if (show) b.textContent = under === "bestView" ? "← Best" : under === "recentView" ? "← Recent" : mbView === EVERYONE ? "← Everyone" : `← ${mbView}`;
 }
 
 /* ---------------- 편지함: 멤버별 메일함 ---------------- */
