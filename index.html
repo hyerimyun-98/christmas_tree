@@ -71,8 +71,33 @@
   .hidden{display:none!important}
   #labTitle{position:fixed;left:0;right:0;top:0;text-align:center;pointer-events:none;z-index:3;
     font:700 11px var(--code);letter-spacing:.32em;color:#b98cff;text-shadow:0 0 6px rgba(170,110,255,.75),0 0 16px rgba(140,80,255,.45);white-space:nowrap}
-  @media (max-width: 600px){ #labTitle{font-size:9px;letter-spacing:.24em} }
+  @media (max-width: 600px){ #labTitle{font-size:9px;letter-spacing:.24em} #hud .hs{font-size:10px;line-height:1.5} }
   #notifyView .sheet{max-width:380px}
+  /* 내 집 꾸미기 */
+  #nfHouse{margin-top:16px;padding-top:14px;border-top:1px dashed rgba(160,255,190,.25)}
+  #nfHouse h3{margin:0 0 8px;font-size:15px}
+  #nfShapes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+  #nfShapes button{background:rgba(255,255,255,.04);border:1px solid rgba(160,255,190,.2);border-radius:10px;padding:8px 2px 6px;cursor:pointer;color:#cfe}
+  #nfShapes button.on{border-color:#9dffb0;box-shadow:0 0 0 1px #9dffb0 inset;background:rgba(157,255,176,.08)}
+  #nfShapes pre{margin:0 auto 4px;font:9px/1.12 var(--code);white-space:pre;display:inline-block;text-align:left}
+  #nfShapes .cap{display:block;font:11px var(--code)}
+  #nfColors{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+  #nfColors button{width:26px;height:26px;border-radius:50%;border:2px solid transparent;cursor:pointer}
+  #nfColors button.on{border-color:#fff;box-shadow:0 0 8px rgba(255,255,255,.6)}
+  #nfSaveHouse{width:100%;padding:10px;border-radius:10px;border:0;font-weight:800;background:#ffe680;color:#2a2100;cursor:pointer}
+  #nfHouse .note{font-size:12px;color:#9ab;margin:10px 0 0}
+  #nfHouseStatus{font:12px var(--mono);color:#e9c45a;margin-top:8px;min-height:1em}
+  #streetInner .hut.custom .rf{color:var(--hc)}
+  #streetInner .hut.custom .bd{color:color-mix(in srgb, var(--hc) 62%, #6f8a7a)}
+  .hut .lvst{display:block;height:10px;font:8px/10px var(--code);color:#ffd34d;letter-spacing:1px;text-shadow:0 0 5px rgba(255,210,80,.7)}
+  .hut{-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
+  .hut.holding{animation:holdRumble .12s linear infinite}
+  @keyframes holdRumble{0%{transform:translate(0,0)}25%{transform:translate(-1px,1px)}50%{transform:translate(1px,0)}75%{transform:translate(0,-1px)}100%{transform:translate(0,0)}}
+  .hut.party{animation:partyBounce .36s ease-in-out infinite}
+  .hut.party pre{animation:partyHue .5s linear infinite}
+  @keyframes partyBounce{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-5px) scale(1.06,.95)}}
+  @keyframes partyHue{from{filter:hue-rotate(0deg) brightness(1.4)}to{filter:hue-rotate(360deg) brightness(1.4)}}
+  .note-fly{position:fixed;left:0;top:0;z-index:7;pointer-events:none;font:16px var(--code);text-shadow:0 0 8px currentColor}
   #notifyView p{margin:0 0 10px;color:#bfe;font-size:13.5px;line-height:1.55}
   #notifyView select{width:100%;margin:4px 0 12px}
   #notifyView .row{display:flex;gap:8px;flex-wrap:wrap}
@@ -276,6 +301,7 @@
     .hut .nm .long{display:none} .hut .nm .short{display:inline}
     .hut.has::after{font-size:9px;top:-4px}
     .hut.sign pre{font-size:5.2px}
+    .hut .lvst{height:8px;font-size:6.5px;line-height:8px;letter-spacing:0}
     #trash{font-size:8.5px} #trash .pile{font-size:8px;max-width:60px}
   }
   .photoRow{display:flex;align-items:center;gap:10px}
@@ -494,7 +520,7 @@
         <div class="trRow"><select id="trLang" aria-label="Translate to"></select><button id="trBtn">🌐 Translate</button></div>
         <div class="trOut hidden" id="trOut"></div>
       </div>
-      <div class="row"><button type="button" id="cBack" class="hidden">← Back</button><button data-close>Close</button><button class="p" id="cNext">Open another</button></div>
+      <div class="row"><button type="button" id="cBack" class="hidden">← Back</button><button type="button" id="cSeq">Next ›</button><button class="p" id="cNext">Open another</button></div>
     </div>
   </div>
 </div>
@@ -569,6 +595,17 @@
         <button type="button" id="nfOff" class="ghost">Turn off</button>
       </div>
       <div id="nfStatus"></div>
+      <div id="nfHouse">
+        <h3 id="nfHouseTitle">🏠 My house</h3>
+        <p id="nfHouseLock" class="note hidden">🔒 Only registered residents can decorate. Pick your name above and tap <b>Turn on alerts</b> first — then you can decorate <b>your own</b> house here.</p>
+        <div id="nfHouseEdit">
+        <div id="nfShapes"></div>
+        <div id="nfColors"></div>
+        <button type="button" id="nfSaveHouse">Save my house</button>
+        <p class="note">Shape &amp; color = the owner's own style.<br>★ stars on top of a name = mailbox level (10 · 20 · 30 letters).</p>
+        <div id="nfHouseStatus"></div>
+        </div>
+      </div>
       <div id="nfInstall"></div>
     </div>
   </div>
@@ -1912,13 +1949,14 @@ const EGGS = [
   ["float",  "💖", "Number One Fan", "Tap a floating best letter 5 times, fast."],
   ["globe",  "🔮", "Inside the Globe", "Find the little golden snow globe on the ground and tap it."],
   ["bear",   "🐻", "Big Bear",       "Keep the tree open for a long while — someone big drops by now and then."],
+  ["party",  "🎉", "House Party",    "Press and hold a house until it can't hold it in anymore."],
 ];
 const EGG_TOTAL = EGGS.length;
 const EGG_HINTS = {
   spin: "Spin the tree round and round?", star: "Poke the star a few times?", moon: "Touch the moon?",
   cat: "Bother a napping cat?", sleep: "Leave the tree alone for a while?", konami: "↑ ↑ ↓ ↓ ← → ← → B A?",
   word: "A magic word in your message?", xmas: "Come back on Christmas?",
-  mail: "Knock on a mailbox again and again?", wish: "One star in the sky looks a little different?", trash: "Tap the trash can again and again?", cookie: "Someone is hiding behind the tree trunk?", shake: "What if the whole screen were a snow globe?", float: "Cheer for a floating letter again and again?", globe: "One snow globe on the ground isn't a letter…", bear: "Leave the tree open for a long, long time…?",
+  mail: "Knock on a mailbox again and again?", wish: "One star in the sky looks a little different?", trash: "Tap the trash can again and again?", cookie: "Someone is hiding behind the tree trunk?", shake: "What if the whole screen were a snow globe?", float: "Cheer for a floating letter again and again?", globe: "One snow globe on the ground isn't a letter…", bear: "Leave the tree open for a long, long time…?", party: "What if you press a house… and don't let go?",
 };
 let eggListOpen = false;
 // 이스터에그는 모두가 공유해요: 누군가 찾으면 Firebase /eggs 에 기록되고 모두의 카운트가 올라가요
@@ -2059,8 +2097,8 @@ function updateHud(){
   const orn = msgs.filter(onTree).length, gifts = msgs.filter(m => m.kind === "gift").length, globes = msgs.length - orn - gifts;
   const nextN = CONFIG.PER_LEVEL - (msgs.length % CONFIG.PER_LEVEL);
   $("#hud").innerHTML =
-    `<span class="t">@my.tree</span>\nrotation  ${deg.toFixed(2)}°\nlights    ${LIGHT_COUNT}\nletters   ${lettersDrawn.toLocaleString()}\nwishes    ${msgs.length}  (🔴${orn} 🎁${gifts} 🔮${globes})\n` +
-    `<span class="lv">level     ${LEVEL}/${MAX_LEVEL}${LEVEL >= MAX_LEVEL ? " MAX" : ""}\nnext 🎉   +${nextN}\neggs 🥚   ${eggs.size}/${EGG_TOTAL}</span>`;
+    `<span class="t">@my.tree</span>\n<span class="hs">rotation  ${deg.toFixed(2)}°\nlights    ${LIGHT_COUNT}\nletters   ${lettersDrawn.toLocaleString()}\nwishes    ${msgs.length}  (🔴${orn} 🎁${gifts} 🔮${globes})\n` +
+    `<span class="lv">level     ${LEVEL}/${MAX_LEVEL}${LEVEL >= MAX_LEVEL ? " MAX" : ""}\nnext 🎉   +${nextN}\neggs 🥚   ${eggs.size}/${EGG_TOTAL}</span></span>`;
 }
 
 /* ---------------- 인사말 타이핑 ---------------- */
@@ -2231,8 +2269,30 @@ const Music = (() => {
     b.textContent = on ? `🔊 ♪ ${SONGS[si].title}` : "🔇 Play music";
     b.classList.toggle("on", on);
   }
+  // 아이폰은 무음(진동) 모드면 웹 소리를 꺼버려요 → "음악 재생" 모드로 바꾸고, 조용한 오디오를 같이 틀어서 소리가 나게 해요
+  let silentEl = null;
+  function unlockIOS(){
+    try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch(_){}
+    try {
+      if (!silentEl){
+        const n = 4000, buf = new ArrayBuffer(44 + n), v = new DataView(buf);   // 0.5초짜리 무음 WAV (8kHz, 8bit)
+        const w = (o, str) => { for (let i = 0; i < str.length; i++) v.setUint8(o + i, str.charCodeAt(i)); };
+        w(0, "RIFF"); v.setUint32(4, 36 + n, true); w(8, "WAVE"); w(12, "fmt "); v.setUint32(16, 16, true);
+        v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, 8000, true); v.setUint32(28, 8000, true);
+        v.setUint16(32, 1, true); v.setUint16(34, 8, true); w(36, "data"); v.setUint32(40, n, true);
+        for (let i = 0; i < n; i++) v.setUint8(44 + i, 128);
+        silentEl = new Audio(URL.createObjectURL(new Blob([buf], { type: "audio/wav" })));
+        silentEl.loop = true; silentEl.setAttribute("playsinline", ""); silentEl.volume = 0.01;
+      }
+      const pr = silentEl.play(); if (pr && pr.catch) pr.catch(() => {});
+    } catch(_){}
+    try {   // 터치하는 순간 아주 짧은 소리를 한 번 재생해서 오디오를 깨워요
+      const b = ac.createBuffer(1, 1, 22050), src = ac.createBufferSource();
+      src.buffer = b; src.connect(ac.destination); src.start(0);
+    } catch(_){}
+  }
   function start(){
-    init(); ac.resume(); startCrackle();
+    init(); unlockIOS(); const r = ac.resume(); if (r && r.catch) r.catch(() => {}); startCrackle();
     on = true; ei = 0; t0 = ac.currentTime + 0.2;
     master.gain.cancelScheduledValues(ac.currentTime);
     master.gain.setValueAtTime(master.gain.value, ac.currentTime);
@@ -2242,6 +2302,7 @@ const Music = (() => {
   }
   function stop(){
     on = false; clearInterval(timer);
+    if (silentEl) try { silentEl.pause(); } catch(_){}
     if (ac){ master.gain.cancelScheduledValues(ac.currentTime); master.gain.setValueAtTime(master.gain.value, ac.currentTime); master.gain.linearRampToValueAtTime(0, ac.currentTime + 0.4); }
     si = (si + 1) % SONGS.length;
     label();
@@ -2253,9 +2314,12 @@ const Music = (() => {
   }
   document.addEventListener("visibilitychange", () => {
     if (!ac) return;
-    if (document.hidden) ac.suspend(); else if (on) ac.resume();
+    if (document.hidden){ ac.suspend(); if (silentEl) try { silentEl.pause(); } catch(_){} }
+    else if (on){ ac.resume(); if (silentEl) { const pr = silentEl.play(); if (pr && pr.catch) pr.catch(() => {}); } }
   });
-  return { start, stop, fanfare, get on(){ return on; }, label, _songs: SONGS };
+  // 아이폰은 "손가락을 뗄 때(touchend/click)"만 소리를 허락해서, 음악이 켜져 있는데 멈춰 있으면 그때 다시 깨워요
+  function wake(){ if (on && ac && (ac.state !== "running" || (silentEl && silentEl.paused))){ unlockIOS(); const r = ac.resume(); if (r && r.catch) r.catch(() => {}); } }
+  return { start, stop, fanfare, wake, get on(){ return on; }, label, _songs: SONGS };
 })();
 
 
@@ -2306,6 +2370,7 @@ function firstGesture(e){
   if (localStorage.getItem("mytree.music") !== "off" && !Music.on) Music.start();
 }
 ["pointerdown","keydown","touchend"].forEach(ev => document.addEventListener(ev, firstGesture, true));
+["touchend", "click", "keydown"].forEach(ev => document.addEventListener(ev, () => Music.wake(), true));
 
 /* ---------------- 입력: 드래그·휠로 회전 / 클릭 ---------------- */
 let downX = 0, downY = 0, lastX = 0, lastT = 0, moved = 0;
@@ -2414,9 +2479,11 @@ function hitTest(x, y){
 }
 
 /* ---------------- 메시지 카드 ---------------- */
-let currentId = null;
+let currentId = null, cardSeq = [];   // "Next ›"로 넘길 순서 (메일함에서 열면 그 메일함 순서, 아니면 최신순 전체)
 function faceTo(m, sec){ focus = { id: m.id, target: m.theta - Math.PI / 2, until: t + sec }; }
-function openCard(m){
+function openCard(m, seq){
+  if (seq) cardSeq = seq.slice();
+  else if (!cardSeq.includes(m.id)) cardSeq = msgs.filter(x => !x._del).sort((a, b) => b.t - a.t).map(x => x.id);
   currentId = m.id;
   faceTo(m, 6);
   $("#cIcon").textContent = KIND_ICON[kindOf(m.kind)];
@@ -2447,6 +2514,15 @@ function openRandom(){
 }
 $("#btnRandom").onclick = openRandom;
 $("#cNext").onclick = openRandom;
+function openNextCard(){
+  const live = cardSeq.filter(id => { const x = msgs.find(y => y.id === id); return x && !x._del; });
+  if (live.length < 2){ toast("That's the last letter here ✉️"); return; }
+  const i = live.indexOf(currentId);
+  const nextId = live[(i + 1) % live.length];
+  if (i === live.length - 1) toast("Back to the first letter ↺", 1600);
+  openCard(msgs.find(y => y.id === nextId));
+}
+$("#cSeq").onclick = openNextCard;
 $("#btnFill").onclick = () => { FILL = { symbol: "text", text: "binary", binary: "symbol" }[FILL]; $("#btnFill").textContent = "FILL: " + FILL; };
 
 /* ---------------- 뒤로가기: 열린 화면을 차례로 쌓아요 ----------------
@@ -2546,6 +2622,21 @@ function hutArt(n, unread){
     ["bd", " |__|_|__| "],
   ];
 }
+/* 내 집 꾸미기: 모양(3가지) + 색깔은 집주인이 고르고, 레벨(편지 수)은 이름 위 ★ 개수와 지붕 위 장식으로 보여줘요 */
+const HOUSE_SHAPES = { cottage: "Cottage", dome: "Igloo", tower: "Castle" };
+const HOUSE_COLORS = { red: "#ff6b6b", orange: "#ffad5c", yellow: "#ffe066", green: "#7be495", blue: "#6fa8ff", purple: "#b98cff", pink: "#ff8fd1", white: "#eef2f7" };
+let homes = {};   // { 이름: { shape, color, dev, t } }
+function customArt(shape, n, unread){
+  const tier = hutTier(n);
+  const win = n >= 10 ? String(Math.min(n, 99)) : (unread ? "*" : n ? "=" : ".") + (n ? String(n) : " ");
+  const top = [["st", "           \n"], ["sm", "    )  )   \n"], ["li", " .*.*.*.*. \n"], ["st", "     *     \n"]][tier];
+  const body = {
+    cottage: [["rf", "    / \\    \n"], ["rf", "   /   \\   \n"], ["rf", "  /_____\\  \n"], ["bd", "  | ["], ["wn", win], ["bd", "]|  \n"], ["bd", "  |__|__|  "]],
+    dome:    [["rf", "    ___    \n"], ["rf", "  .'   '.  \n"], ["rf", " /       \\ \n"], ["bd", " | ["], ["wn", win], ["bd", "]  | \n"], ["bd", " |___|___| "]],
+    tower:   [["rf", " |\"|   |\"| \n"], ["rf", " |_|___|_| \n"], ["bd", " |  ["], ["wn", win], ["bd", "] | \n"], ["bd", " |   _   | \n"], ["bd", " |__| |__| "]],
+  }[shape] || [];
+  return [top, ...body];
+}
 function hallArt(n, unread){
   const win = (unread ? "*" : n ? "=" : ".") + (n ? String(Math.min(n, 99)) : "").padEnd(2, " ");
   return [
@@ -2577,10 +2668,12 @@ function renderStreet(){
     const list = lettersFor(name).filter(m => !m._del && !m._transit), unread = list.filter(m => !r.has(m.id)).length;
     const b = document.createElement("button");
     b.type = "button";
-    b.className = "hut" + (name === EVERYONE ? " hall" : " t" + hutTier(list.length)) + (unread ? " has" : "") + (list.length ? " full" : "") + (hlName === name ? " on" : "");
+    const home = name !== EVERYONE && homes[name] && HOUSE_SHAPES[homes[name].shape] ? homes[name] : null;
+    b.className = "hut" + (name === EVERYONE ? " hall" : " t" + hutTier(list.length)) + (home ? " custom" : "") + (unread ? " has" : "") + (list.length ? " full" : "") + (hlName === name ? " on" : "");
+    if (home) b.style.setProperty("--hc", HOUSE_COLORS[home.color] || HOUSE_COLORS.green);
     b.title = `${name === EVERYONE ? "Letters for everyone" : name + "'s mailbox"} — ${list.length} letter${list.length === 1 ? "" : "s"}${unread ? `, ${unread} new` : ""}`;
     const pre = document.createElement("pre");
-    for (const [cls, txt] of (name === EVERYONE ? hallArt : hutArt)(list.length, unread)){
+    for (const [cls, txt] of (name === EVERYONE ? hallArt(list.length, unread) : home ? customArt(home.shape, list.length, unread) : hutArt(list.length, unread))){
       const sp = document.createElement("span"); sp.className = cls;
       sp.textContent = txt;
       pre.appendChild(sp);
@@ -2590,11 +2683,114 @@ function renderStreet(){
     else nm.textContent = name;
     const pipe = document.createElement("span"); pipe.className = "pipe";   // 땅굴과 집을 잇는 통로
     b.dataset.name = name;
-    b.appendChild(pipe); b.appendChild(pre); b.appendChild(nm);
-    b.onclick = () => knockHut(b, name);
+    const lv = document.createElement("span"); lv.className = "lvst";   // 레벨 별: 편지 10·20·30통
+    lv.textContent = name === EVERYONE ? "" : "★".repeat(hutTier(list.length));
+    b.appendChild(pipe); b.appendChild(pre); b.appendChild(lv); b.appendChild(nm);
+    b.onclick = () => { if (b._held){ b._held = false; return; } knockHut(b, name); };
+    bindHold(b, name);
     box.appendChild(b);
   }
 }
+/* ---------------- 이스터에그: 집을 꾹 누르고 있으면 집들이 파티! ---------------- */
+function bindHold(b, name){
+  let timer = null, sx = 0, sy = 0;
+  const cancel = () => { clearTimeout(timer); timer = null; b.classList.remove("holding"); };
+  b.addEventListener("contextmenu", e => e.preventDefault());
+  b.addEventListener("pointerdown", e => {
+    sx = e.clientX; sy = e.clientY; cancel();
+    b.classList.add("holding");
+    timer = setTimeout(() => { cancel(); b._held = true; houseParty(b, name); }, 800);
+  });
+  b.addEventListener("pointermove", e => { if (timer && Math.hypot(e.clientX - sx, e.clientY - sy) > 10) cancel(); });
+  ["pointerup", "pointerleave", "pointercancel"].forEach(ev => b.addEventListener(ev, cancel));
+}
+function houseParty(b, name){
+  const label = name === EVERYONE ? "everyone's hall" : `${name}'s place`;
+  b.classList.remove("party"); void b.offsetWidth; b.classList.add("party");
+  setTimeout(() => { const h = document.querySelector(`#streetInner .hut[data-name="${CSS.escape(name)}"]`); if (h) h.classList.remove("party"); }, 3200);
+  const r = b.getBoundingClientRect(), cxp = r.left + r.width / 2, top = r.top + 6;
+  const notes = ["♪", "♫", "♬", "♩", "✨", "🎉"], cols = ["#ffd34d", "#ff8fd1", "#9dffb0", "#6fa8ff", "#b98cff", "#ffffff"];
+  for (let i = 0; i < 14; i++){
+    const el = document.createElement("div"); el.className = "note-fly";
+    el.textContent = notes[i % notes.length]; el.style.color = cols[i % cols.length];
+    document.body.appendChild(el);
+    const dx = (Math.random() - 0.5) * 120, up = 60 + Math.random() * 90, rot = (Math.random() - 0.5) * 80;
+    el.animate([
+      { transform: `translate(${cxp}px, ${top}px) scale(.4)`, opacity: 0 },
+      { transform: `translate(${cxp + dx * 0.4}px, ${top - up * 0.4}px) scale(1) rotate(${rot / 2}deg)`, opacity: 1, offset: 0.25 },
+      { transform: `translate(${cxp + dx}px, ${top - up}px) scale(.9) rotate(${rot}deg)`, opacity: 0 },
+    ], { duration: 1400 + Math.random() * 900, delay: i * 120, easing: "ease-out", fill: "both" }).finished.then(() => el.remove());
+  }
+  if (Music.on) Music.fanfare();
+  egg("party", `🎉 House party at ${label}!`);
+}
+
+/* ---------------- 내 집 꾸미기 (모양·색) : Firebase /homes/{이름} ---------------- */
+const HOMES_LS = "mytree.homes";
+async function loadHomes(){
+  if (PREVIEW) return;
+  if (!DB){ try { homes = JSON.parse(localStorage.getItem(HOMES_LS) || "{}") || {}; } catch(_){} renderStreet(); return; }
+  try {
+    const res = await fetch(`${DB}/homes.json`, { cache: "no-store" });
+    if (!res.ok) return;
+    const d = (await res.json()) || {}, next = {};
+    for (const [k, v] of Object.entries(d)) if (v && HOUSE_SHAPES[v.shape] && HOUSE_COLORS[v.color]) next[k] = v;
+    if (JSON.stringify(next) !== JSON.stringify(homes)){ homes = next; renderStreet(); }
+  } catch(_){}
+}
+let houseDraft = { shape: "cottage", color: "green" };
+// 집 꾸미기는 Alerts에서 "나는 ○○"로 등록한 사람만, 자기 집만 할 수 있어요
+function renderHouseEditor(){
+  const me = myName();
+  $("#nfHouseLock").classList.toggle("hidden", !!me);
+  $("#nfHouseEdit").classList.toggle("hidden", !me);
+  $("#nfHouseTitle").textContent = me ? `🏠 My house — ${me}` : "🏠 My house";
+  if (!me) return;
+  const sh = $("#nfShapes"); sh.innerHTML = "";
+  for (const [key, label] of Object.entries(HOUSE_SHAPES)){
+    const bt = document.createElement("button"); bt.type = "button"; bt.className = key === houseDraft.shape ? "on" : "";
+    const pre = document.createElement("pre");
+    for (const [cls, txt] of customArt(key, 0, 0)){ const sp = document.createElement("span"); sp.textContent = txt; sp.style.color = cls === "wn" ? "#4d6356" : HOUSE_COLORS[houseDraft.color]; pre.appendChild(sp); }
+    const cap = document.createElement("span"); cap.className = "cap"; cap.textContent = label;
+    bt.appendChild(pre); bt.appendChild(cap);
+    bt.onclick = () => { houseDraft.shape = key; renderHouseEditor(); };
+    sh.appendChild(bt);
+  }
+  const cl = $("#nfColors"); cl.innerHTML = "";
+  for (const [key, hex] of Object.entries(HOUSE_COLORS)){
+    const bt = document.createElement("button"); bt.type = "button"; bt.title = key; bt.style.background = hex;
+    bt.className = key === houseDraft.color ? "on" : "";
+    bt.onclick = () => { houseDraft.color = key; renderHouseEditor(); };
+    cl.appendChild(bt);
+  }
+  const h = homes[me], locked = h && h.dev && h.dev !== DEVICE;
+  $("#nfSaveHouse").disabled = !!locked;
+  $("#nfSaveHouse").style.opacity = locked ? .45 : 1;
+  $("#nfHouseStatus").textContent = locked ? "🔒 This house was decorated from another phone/computer. Only that device can change it." : "";
+}
+function loadHouseDraft(){
+  const h = homes[myName()];
+  houseDraft = h ? { shape: h.shape, color: h.color } : { shape: "cottage", color: "green" };
+}
+
+$("#nfSaveHouse").onclick = async () => {
+  const me = myName(); if (!me) return;
+  const h = homes[me]; if (h && h.dev && h.dev !== DEVICE) return;
+  const data = { shape: houseDraft.shape, color: houseDraft.color, dev: DEVICE, t: Date.now() };
+  try {
+    if (DB && !PREVIEW){
+      const res = await fetch(`${DB}/homes/${encodeURIComponent(me)}.json`, { method: "PUT", body: JSON.stringify(data) });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+    }
+    homes[me] = data;
+    if (!DB) try { localStorage.setItem(HOMES_LS, JSON.stringify(homes)); } catch(_){}
+    renderStreet();
+    $("#nfHouseStatus").textContent = "✅ Saved! Everyone will see your new house.";
+    const hut = document.querySelector(`#streetInner .hut[data-name="${CSS.escape(me)}"]`);
+    if (hut){ hut.classList.add("arrive"); setTimeout(() => hut.classList.remove("arrive"), 900); }
+  } catch (err){ console.error(err); $("#nfHouseStatus").textContent = "Couldn't save. Please try again in a moment."; }
+};
+
 let knock = { name: "", times: [], timer: null };
 function knockHut(el, name){
   const now = performance.now();
@@ -2641,7 +2837,7 @@ function renderMailbox(){
     li.querySelector(".pv").textContent = m._del ? RM_TEXT : label(m);
     if (m._del) li.querySelector(".ic").textContent = "🗑";
     li.querySelector(".dt").textContent = m.t ? new Date(m.t).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
-    li.querySelector("button").onclick = () => openCard(m);
+    li.querySelector("button").onclick = () => openCard(m, list.filter(x => !x._del).map(x => x.id));
     li.appendChild(makeRx(m));
     ul.appendChild(li);
   }
@@ -3298,7 +3494,7 @@ function renderBoard(){
     li.innerHTML = '<button type="button" class="main"><span class="rk"></span><span class="pv"></span></button>';
     li.querySelector(".rk").textContent = i < 3 ? ["🥇", "🥈", "🥉"][i] : i + 1;
     li.querySelector(".pv").textContent = `${label(m)}  — ${m.name || "Anonymous"} → ${m.to || "Everyone"}`;
-    li.querySelector("button").onclick = () => openCard(m);
+    li.querySelector("button").onclick = () => openCard(m, top.map(x => x.id));
     li.appendChild(makeRx(m));
     ul.appendChild(li);
   });
@@ -3488,6 +3684,7 @@ async function loadRemote(){
     loadEggs();
     loadReactions();
     loadMods();
+    loadHomes();
   }
   try {
     // 처음엔 최근 400개, 그 뒤엔 마지막으로 본 것 이후의 새 메시지만 받아와요
@@ -3605,7 +3802,7 @@ function renderNotify(){
   else if (isIOS()) ins.innerHTML = "📱 <b>Install on iPhone:</b> open this page in <b>Safari</b> → tap <b>Share</b> → <b>Add to Home Screen</b>, then open it from the icon. Phone alerts only work in the installed app.";
   else ins.innerHTML = "📱 <b>Install as an app:</b> in Chrome, open the menu (⋮) → <b>Install app</b> / <b>Add to Home screen</b>. On a computer, look for the install icon in the address bar.";
 }
-$("#btnNotify").onclick = () => { renderNotify(); pushOv("notifyView"); };
+$("#btnNotify").onclick = () => { renderNotify(); loadHouseDraft(); renderHouseEditor(); pushOv("notifyView"); };
 $("#nfOn").onclick = async () => {
   const me = $("#nfMe").value;
   if (!CONFIG.MEMBERS.includes(me)){ $("#nfStatus").textContent = "Pick your name first 🙂"; return; }
@@ -3613,7 +3810,7 @@ $("#nfOn").onclick = async () => {
   if ("Notification" in window && Notification.permission === "default"){
     try { await Notification.requestPermission(); } catch(_){}
   }
-  renderNotify(); updateBadge();
+  renderNotify(); updateBadge(); loadHouseDraft(); renderHouseEditor();
   if ("Notification" in window && Notification.permission === "denied") $("#nfStatus").textContent = `⚠️ Alerts are blocked in this browser's settings. You'll still see in-app alerts for ${me}.`;
 };
 $("#nfOff").onclick = () => { try { localStorage.setItem(ALERT_KEY, "0"); } catch(_){} renderNotify(); updateBadge(); };
@@ -3623,7 +3820,7 @@ let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(res
 resize();
 if (PREVIEW){ makePreview(PREVIEW); onMsgsChanged(true); }
 else if (DB){ onMsgsChanged(true); loadRemote(); setInterval(loadRemote, CONFIG.POLL_SEC * 1000); document.addEventListener("visibilitychange", () => { if (!document.hidden) loadRemote(); }); }
-else { loadLocal(); onMsgsChanged(true); loadReactions(); }
+else { loadLocal(); onMsgsChanged(true); loadReactions(); loadHomes(); }
 setInterval(updateHud, 250);
 requestAnimationFrame(frame);
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(resize);
