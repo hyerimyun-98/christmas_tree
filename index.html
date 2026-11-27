@@ -287,27 +287,27 @@
   .hut.hall .nm{color:#9dffb0}
   @keyframes hutGlow{0%,100%{filter:drop-shadow(0 0 0 rgba(255,220,100,0))}50%{filter:drop-shadow(0 0 7px rgba(255,220,100,.55))}}
   .hut .nm .short{display:none}
-  /* 휴대폰: 집을 작게 두 줄로 (옆으로 밀지 않아도 다 보이게), 쓰레기통은 오른쪽 아래 구석 */
+  /* 휴대폰: 집을 작게 두 줄(10칸씩)로 — 옆으로 밀지 않아도 다 보이게. 쓰레기통은 오른쪽 아래 구석(아랫줄 마지막 칸) */
   @media (max-width: 600px){
     :root{--street: 196px}
-    #street{overflow:hidden;padding:16px 70px calc(6px + env(safe-area-inset-bottom)) 6px}
-    #street .inner{display:grid;grid-template-columns:repeat(9, minmax(0, 1fr));grid-template-rows:1fr 1fr;row-gap:16px;width:100%;margin:0;padding-bottom:0}
+    #street{overflow:hidden;padding:16px 6px calc(6px + env(safe-area-inset-bottom)) 6px}
+    #street .inner{display:grid;grid-template-columns:repeat(10, minmax(0, 1fr));grid-template-rows:1fr 1fr;row-gap:16px;width:100%;margin:0;padding-bottom:0}
     #street .inner::after{display:none}
-    #street .inner::before{content:"";position:absolute;left:-6px;right:-70px;top:calc(50% + 1px);height:10px;margin-top:-5px;
+    #street .inner::before{content:"";position:absolute;left:-6px;right:-6px;top:calc(50% + 1px);height:10px;margin-top:-5px;
       border-top:1px dashed rgba(190,140,92,.55);border-bottom:1px dashed rgba(190,140,92,.55);
       background:repeating-linear-gradient(90deg, rgba(255,214,140,.13) 0 2px, transparent 2px 14px), rgba(46,29,16,.88);
       background-size:14px 100%, auto;animation:tunnelFlow 1.6s linear infinite}
-    /* 위 땅굴과 가운데 땅굴을 잇는 오른쪽 세로 통로 */
-    #tunnel::after{content:"";position:absolute;right:7px;top:100%;width:8px;height:84px;
+    /* 위 땅굴과 가운데 땅굴을 잇는 왼쪽 끝 세로 통로 */
+    #tunnel::after{content:"";position:absolute;left:0;top:100%;width:6px;height:84px;
       border-left:1px dashed rgba(190,140,92,.55);border-right:1px dashed rgba(190,140,92,.55);background:rgba(46,29,16,.88)}
-    .hut{font-size:6.2px;padding:0 0 2px;margin:0!important;min-width:0}
+    .hut{font-size:5.6px;padding:0 0 2px;margin:0!important;min-width:0}
     .hut pre{overflow:hidden;max-width:100%}
-    .hut .nm{font-size:8px;letter-spacing:-.3px;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+    .hut .nm{font-size:7.6px;letter-spacing:-.3px;overflow:hidden;text-overflow:ellipsis;max-width:100%}
     .hut .nm .long{display:none} .hut .nm .short{display:inline}
     .hut.has::after{font-size:9px;top:-4px}
-    .hut.sign pre{font-size:5.2px}
+    .hut.sign pre{font-size:4.6px}
     .hut .lvst{height:8px;font-size:6.5px;line-height:8px;letter-spacing:0}
-    #trash{font-size:8.5px}
+    #trash{right:4px;font-size:5.8px;text-align:center} #trash .cnt{font-size:7.5px;white-space:nowrap} #trash .cnt .tl{display:none}
   }
   .photoRow{display:flex;align-items:center;gap:10px}
   .sheet label.pick{display:inline-block;margin:0;padding:9px 12px;border-radius:10px;border:1px dashed rgba(140,255,170,.35);color:#cfe9d6;
@@ -667,7 +667,7 @@ const CONFIG = {
   STAR_LOGO: false,         // false = 꼭대기는 항상 별
   SPIN: 0.35,
   // 연구실 멤버 (편지 보내는이/받는이 목록)
-  MEMBERS: ["강은", "상은", "Vika", "Akira", "부승", "종호", "정빈", "경택", "Rai", "성준", "기락", "교수님", "이든", "혜림", "린지"],
+  MEMBERS: ["강은", "상은", "Vika", "Akira", "부승", "종호", "정빈", "경택", "Rai", "성준", "기락", "교수님", "이든", "혜림", "린지", "정우"],
   // 예전 이름 → 새 이름 (이름을 바꿔도 이미 받은 편지가 새 메일함으로 들어가요)
   RENAMED: { "교수": "교수님" },
   MAX_TEXT: 80,
@@ -1334,8 +1334,8 @@ async function letterRoute(m, sx, sy){
     const pre = hut && hut.querySelector("pre"), roof = pre ? pre.getBoundingClientRect().top + 4 : hr.top + 20;
     const inner = $("#streetInner").getBoundingClientRect(), midY = inner.top + inner.height / 2 + 1;
     if (W <= 600 && roof > midY){
-      // 휴대폰 아랫줄 집: 위 땅굴 → 오른쪽 세로 통로 → 가운데 땅굴 → 집
-      const sx2 = W - 11;
+      // 휴대폰 아랫줄 집: 위 땅굴 → 왼쪽 끝 세로 통로 → 가운데 땅굴 → 집
+      const sx2 = 3;   // 휴대폰: 왼쪽 끝 세로 통로
       await go([cp.x, ty], [sx2, ty], Math.max(300, Math.abs(sx2 - cp.x) * 2.4), "ease-in-out");
       await go([sx2, ty], [sx2, midY], 520, "ease-in");
       await go([sx2, midY], [hx, midY], Math.max(500, Math.min(1900, Math.abs(hx - sx2) * 2.4)), "ease-in-out");
@@ -3594,7 +3594,7 @@ function scramble(text, seed){
 }
 function renderTrash(){
   const del = msgs.filter(m => m._del);
-  $("#trashCnt").textContent = `trash · ${del.length}`;
+  $("#trashCnt").innerHTML = `<span class="tl">trash · </span>${del.length}`;   // 휴대폰에선 숫자만
   const bits = del.flatMap(m => [...m.text].filter(ch => ch.trim()));
   const r = rng(del.length * 7 + 3);
   const pile = [];
