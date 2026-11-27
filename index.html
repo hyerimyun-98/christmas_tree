@@ -287,7 +287,7 @@
   .hut.hall .nm{color:#9dffb0}
   @keyframes hutGlow{0%,100%{filter:drop-shadow(0 0 0 rgba(255,220,100,0))}50%{filter:drop-shadow(0 0 7px rgba(255,220,100,.55))}}
   .hut .nm .short{display:none}
-  /* 휴대폰: 집을 작게 두 줄로 (옆으로 밀지 않아도 다 보이게), 쓰레기통은 아랫줄 끝(린지 집 옆) */
+  /* 휴대폰: 집을 작게 두 줄로 (옆으로 밀지 않아도 다 보이게), 쓰레기통은 오른쪽 아래 구석 */
   @media (max-width: 600px){
     :root{--street: 196px}
     #street{overflow:hidden;padding:16px 70px calc(6px + env(safe-area-inset-bottom)) 6px}
@@ -307,7 +307,7 @@
     .hut.has::after{font-size:9px;top:-4px}
     .hut.sign pre{font-size:5.2px}
     .hut .lvst{height:8px;font-size:6.5px;line-height:8px;letter-spacing:0}
-    #trash{font-size:8.5px} #trash .pile{font-size:8px;max-width:60px}
+    #trash{font-size:8.5px}
   }
   .photoRow{display:flex;align-items:center;gap:10px}
   .sheet label.pick{display:inline-block;margin:0;padding:9px 12px;border-radius:10px;border:1px dashed rgba(140,255,170,.35);color:#cfe9d6;
@@ -2583,6 +2583,8 @@ function updateBackBtn(){
 /* ---------------- 편지함: 멤버별 메일함 ---------------- */
 let hlName = "";          // 트리에서 빛나게 볼 사람 (메일함에서 선택)
 let mbView = "";          // 메일함에서 보고 있는 사람 ("" = 전체 목록)
+// 브라우저가 공간이 부족할 때 이 사이트 저장값(읽음 표시 등)을 지우지 않도록 "계속 보관"을 요청해요
+try { if (navigator.storage && navigator.storage.persist) navigator.storage.persisted().then(ok => { if (!ok) navigator.storage.persist(); }).catch(() => {}); } catch(_){}
 function readSet(){ try { return new Set(JSON.parse(localStorage.getItem("mytree.read") || "[]")); } catch(_){ return new Set(); } }
 function markRead(id){
   const r = readSet(); if (r.has(id)) return;
@@ -3733,13 +3735,21 @@ function breakTrash(){
 /* ---------------- 저장소 ---------------- */
 const LS_KEY = "mytree.messages.v2";   // 키를 바꾸면 이전에 저장된 장식이 초기화돼요
 try { localStorage.removeItem("mytree.messages.v1"); } catch(_){}
+// Firebase가 만든 편지 id(-P7Q…)에는 서버 시각이 들어 있어요. 폰 시계가 틀려도 정확한 시간을 쓰려고 여기서 꺼내요.
+const PUSH_CHARS = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
+function keyTime(id){
+  if (typeof id !== "string" || id.length !== 20 || id[0] !== "-") return 0;
+  let t = 0;
+  for (let i = 0; i < 8; i++){ const v = PUSH_CHARS.indexOf(id[i]); if (v < 0) return 0; t = t * 64 + v; }
+  return t > 1.6e12 && t < 4e12 ? t : 0;
+}
 function sanitize(id, m){
   if (!m || typeof m !== "object") return null;
   const text = String(m.text || "").slice(0, CONFIG.MAX_TEXT).trim();
   if (!text && m.p !== true) return null;   // 글이 없어도 사진이 있으면 OK
   return { id: String(id), name: String(CONFIG.RENAMED[m.name] || m.name || "Anonymous").slice(0, CONFIG.MAX_NAME), text,
     kind: kindOf(m.kind),
-    color: Object.prototype.hasOwnProperty.call(COLORS, m.color) ? m.color : "red", t: Number(m.t) || 0, p: m.p === true,
+    color: Object.prototype.hasOwnProperty.call(COLORS, m.color) ? m.color : "red", t: keyTime(String(id)) || Number(m.t) || 0, p: m.p === true,
     to: String(CONFIG.RENAMED[m.to] || m.to || "").slice(0, CONFIG.MAX_NAME),   // 받는이는 지우지 않고 그대로 보존
     dev: typeof m.dev === "string" ? m.dev.slice(0, 24) : "" };   // 쓴 기기 (수정·삭제 권한)
 }
